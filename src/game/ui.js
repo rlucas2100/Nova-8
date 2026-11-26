@@ -57,6 +57,7 @@ export class Dialog {
     this.auto = opt.auto || 0;
     this.t = 0;
     this.mutter = !!opt.mutter;
+    this.more = opt.more !== undefined ? !!opt.more : !this.auto;   // the ▼ that says A moves on
     this.voice = this.mutter ? 'mutter' : opt.voice || VOICE_OF[this.name] || 'default';
     if (LOVE.test(str) && game.love) game.love();
   }
@@ -94,7 +95,7 @@ export class Dialog {
       text(ctx, line.slice(0, left), 10, y + 7 + i * LINE_H, this.mutter ? '#cdb8ff' : C.text);
       left -= line.length;
     });
-    if (this.chars >= this.total && !this.auto && Math.floor(g.t / 16) % 2 === 0) text(ctx, '▼', W - 16, y + 33, C.gold);
+    if (this.chars >= this.total && this.more && Math.floor(g.t / 16) % 2 === 0) text(ctx, '▼', W - 16, y + 33, C.gold);
   }
 }
 

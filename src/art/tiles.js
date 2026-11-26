@@ -45,14 +45,14 @@ export const TILE = {
   'T': { name: 'canopy', solid: true },
   'f': { name: 'fern', encounter: true },
   'r': { name: 'ruin' },
-  // the Shroom Groove
+  // the Jelly Jam
   'q': { name: 'moss' },
-  'u': { name: 'shrooms', encounter: true },
-  'c': { name: 'capbridge', bridge: true },
+  'u': { name: 'sprouts', encounter: true },
+  'c': { name: 'leafbridge', bridge: true },
   'Y': { name: 'sky2', solid: true, void: true },
 };
 
-const LAND_BASE = { soil: P.soil, lawn: P.lawn, plaza: P.st2, path: P.path, glow: P.soil, flowers: P.lawn, blooms: P.soil, scorch: P.lawn, sand: P.sand, nest: '#5a2a34', jungle: '#25603f', fern: '#1b4a30', ruin: '#6e6a90', moss: '#4a1f7a', shrooms: '#3a1660' };
+const LAND_BASE = { soil: P.soil, lawn: P.lawn, plaza: P.st2, path: P.path, glow: P.soil, flowers: P.lawn, blooms: P.soil, scorch: P.lawn, sand: P.sand, nest: '#5a2a34', jungle: '#25603f', fern: '#1b4a30', ruin: '#6e6a90', moss: '#4a1f7a', sprouts: '#3a1660' };
 
 function dot(g, x, y, c) { g.fillStyle = c; g.fillRect(x, y, 1, 1); }
 function box(g, x, y, w, h, c) { g.fillStyle = c; g.fillRect(x, y, w, h); }
@@ -197,9 +197,9 @@ function cliff(g, x, y, f, n, X, Y) {
     box(g, x, y + 15, 16, 1, P.ink);
   }
 }
-/* where land meets the sky: the edge crumbles down (a thin shadow under a mushroom-cap bridge) */
+/* where land meets the sky: the edge crumbles down (a thin shadow under a leaf bridge) */
 const ROCK = { r1: P.r1, r2: P.r2, r4: P.r4 };
-const ROCK2 = { r1: '#1a0638', r2: '#2e0e58', r4: '#6a2fa8', glow: '#ff8ae0' };   // under the Groove's islands, with glowing roots
+const ROCK2 = { r1: '#1a0638', r2: '#2e0e58', r4: '#6a2fa8', glow: '#ff8ae0' };   // under the Jelly Jam's islands, with glowing roots
 function skyEdges(g, x, y, n, X, Y, rock) {
   const land = (c) => !(TILE[c] || {}).void, up = n(0, -1);
   if (up === 'c') { box(g, x + 1, y, 14, 2, rock.r1); for (let i = 2; i < 14; i += 3) dot(g, x + i, y + 2, rock.r1); }
@@ -229,7 +229,7 @@ function voidSky(g, x, y, f, n, X, Y, mapH) {
   }
   skyEdges(g, x, y, n, X, Y, ROCK);
 }
-/* the Shroom Groove's sky: bright violet all the way down, with drifting cloud bands and pink stars */
+/* the Jelly Jam's sky: bright violet all the way down, with drifting cloud bands and pink stars */
 const G = { moss: '#7a3e9e', moss2: '#663088', moss3: '#9658c0', sky1: '#1c0540', sky2: '#2a0a5c', sky3: '#3c1280' };
 function sky2(g, x, y, f, n, X, Y) {
   const v = hash(Math.floor(X / 3), Math.floor(Y / 2), 1500);
@@ -369,7 +369,7 @@ function ruin(g, x, y, f, n, X, Y) {   // old paving stones round the Veil Gate,
   }
 }
 
-/* ---------- the Shroom Groove: purple moss, glowing mushroom patches, bridges of mushroom caps ---------- */
+/* ---------- the Jelly Jam: purple moss, patches of alien sprouts, bridges of giant leaves ---------- */
 function moss(g, x, y, f, n, X, Y, base = G.moss) {
   box(g, x, y, 16, 16, base);
   for (let i = 0; i < 9; i++) dot(g, x + Math.floor(hash(X, Y, i + 1300) * 16), y + Math.floor(hash(X, Y, i + 1310) * 16), hash(X, Y, i + 1320) < 0.5 ? G.moss2 : G.moss3);
@@ -384,24 +384,31 @@ function moss(g, x, y, f, n, X, Y, base = G.moss) {
   if (sky(n(1, 0))) box(g, x + 15, y, 1, 16, '#3a1460');
   if (sky(n(0, 1))) box(g, x, y + 15, 16, 1, '#3a1460');
 }
-function shrooms(g, x, y, f, n, X, Y) {   // a patch of little glowing mushrooms: wild creatures hide in it
+function sprouts(g, x, y, f, n, X, Y) {   // a patch of curly alien sprouts and glowing buds: wild creatures hide in it
   moss(g, x, y, f, n, X, Y, G.moss2);
   for (let i = 0; i < 5; i++) {
-    const mx = x + 2 + ((i * 5 + Math.floor(hash(X, Y, i + 1400) * 3)) % 12), my = y + 5 + ((i * 7) % 9);
-    const h = 2 + ((i + X) % 3), c = ['#ff6ab0', '#5ff2ff', '#ffd25a', '#b06aff'][(i + Y) % 4], lit = (f + i) % 4 < 2;
-    box(g, mx, my - h + 1, 1, h, '#f2e6ff');
-    box(g, mx - 1, my - h, 3, 1, lit ? c : shade(c, -0.3)); dot(g, mx, my - h - 1, lit ? '#ffffff' : c);
+    const sx = x + 2 + ((i * 5 + Math.floor(hash(X, Y, i + 1400) * 3)) % 12), sy = y + 6 + ((i * 7) % 8);
+    const c = ['#ff6ab0', '#5ff2ff', '#ffd25a', '#c08cff'][(i + Y) % 4], lit = (f + i) % 4 < 2, sway = (f + i) % 4 === 1 ? 1 : 0;
+    if (i % 2) {   // a curly sprout, its tip rolled up like a fiddlehead
+      box(g, sx, sy - 3, 1, 4, '#9a4ad8'); dot(g, sx + sway, sy - 4, '#9a4ad8'); dot(g, sx + 1 + sway, sy - 5, '#c07af0'); dot(g, sx + 2 + sway, sy - 4, '#c07af0'); dot(g, sx + 1 + sway, sy - 3, lit ? c : '#7a3ab0');
+      dot(g, sx - 1, sy - 1, '#3fd0b0'); dot(g, sx + 1, sy - 2, '#3fd0b0');
+    } else {       // a glowing bud on a bent stalk, with two little leaves
+      box(g, sx, sy - 2, 1, 3, '#7a3ab0'); dot(g, sx - 1, sy - 1, '#3fd0b0'); dot(g, sx + 1, sy, '#3fd0b0');
+      box(g, sx - 1 + sway, sy - 4, 2, 2, lit ? c : shade(c, -0.35)); if (lit) dot(g, sx - 1 + sway, sy - 4, '#ffffff');
+    }
   }
 }
-function capbridge(g, x, y, f, n, X, Y) {   // a walkway of big round mushroom caps over the sky
+function leafbridge(g, x, y, f, n, X, Y) {   // a walkway of giant floating leaves over the sky
   sky2(g, x, y, f, n, X, Y);
   const solidish = (c) => !(TILE[c] || {}).void;
   const horiz = solidish(n(-1, 0)) || solidish(n(1, 0));
   for (let k = 0; k < 2; k++) {
     const cx = horiz ? x + 4 + k * 8 : x + 8, cy = horiz ? y + 8 : y + 4 + k * 8;
-    box(g, cx - 5, cy - 3, 10, 7, '#a02a68'); box(g, cx - 4, cy - 4, 8, 9, '#a02a68');
-    box(g, cx - 4, cy - 3, 8, 6, '#ff6ab0'); box(g, cx - 3, cy - 4, 6, 1, '#ff8ac4'); box(g, cx - 3, cy + 3, 6, 1, '#d84a90');
-    dot(g, cx - 2, cy - 2, '#ffffff'); dot(g, cx + 1, cy - 1, '#ffe0f0'); dot(g, cx - 1, cy + 1, '#ffffff'); dot(g, cx + 2, cy + 1, '#ffe0f0');
+    box(g, cx - 5, cy - 3, 10, 7, '#1f6a5a'); box(g, cx - 4, cy - 4, 8, 9, '#1f6a5a');           // the leaf's dark rim
+    box(g, cx - 4, cy - 3, 8, 6, '#3fb890'); box(g, cx - 3, cy - 4, 6, 1, '#6ae0b0'); box(g, cx - 3, cy + 3, 6, 1, '#2a8a70');
+    if (horiz) { box(g, cx - 4, cy, 8, 1, '#c07af0'); dot(g, cx - 2, cy - 1, '#c07af0'); dot(g, cx + 1, cy + 1, '#c07af0'); }   // glowing veins
+    else { box(g, cx, cy - 3, 1, 6, '#c07af0'); dot(g, cx - 1, cy - 1, '#c07af0'); dot(g, cx + 1, cy + 1, '#c07af0'); }
+    dot(g, cx - 3, cy - 2, '#e0fff0');
   }
 }
 
@@ -413,7 +420,7 @@ const PAINT = {
   blooms: (g, x, y, f, n, X, Y) => flowers(g, x, y, f, n, X, Y, true),
   bridgeH, bridgeV, stone, void: voidSky, fall,
   jungle: (g, x, y, f, n, X, Y) => jungle(g, x, y, f, n, X, Y), canopy, fern, ruin,
-  moss: (g, x, y, f, n, X, Y) => moss(g, x, y, f, n, X, Y), shrooms, capbridge, sky2,
+  moss: (g, x, y, f, n, X, Y) => moss(g, x, y, f, n, X, Y), sprouts, leafbridge, sky2,
 };
 
 /* paint a whole map's ground into 4 animation frames */
@@ -760,7 +767,7 @@ function thornsArt() {   // black brambles, pulsing with shadow
   });
 }
 
-/* ---------- Shroom Groove props ---------- */
+/* ---------- Jelly Jam props: purple alien plants of every kind (and a couple of giant mushrooms) ---------- */
 const SHROOM_PALS = [
   { C: '#ff5aa8', c: '#c02a78', u: '#7a1a5a', S: '#ffd6f0', g: '#ffffff' },
   { C: '#a050e0', c: '#6a2ab0', u: '#3a1a6a', S: '#8ff0ff', g: '#e0ffff' },
@@ -790,6 +797,88 @@ function miniShroomArt() {
     p.set(3, 7, 'W'); p.set(10, 5, 'W'); p.set(12, 6, 'W'); p.set(8, 10, 'W');
     p.outline('K');
     g.drawImage(spr(p.rows(), { K: P.ink, T: '#ece0f8', A: '#ff6ab0', B: '#5ff2ff', C: '#ffd25a', W: '#ffffff' }), 0, 0);
+  });
+}
+/* a quadratic curve of fat dots, getting thinner: stalks, fronds, tendrils */
+function curve(p, x0, y0, cx, cy, x1, y1, r0, r1, c, steps = 30) {
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps, a = (1 - t) * (1 - t), b = 2 * (1 - t) * t, d = t * t, r = r0 + (r1 - r0) * t;
+    p.ellipse(a * x0 + b * cx + d * x1, a * y0 + b * cy + d * y1, r, r, c);
+  }
+}
+const ORB_COLS = [{ O: '#ff6ac8', o: '#ffd6f2' }, { O: '#5fe8ff', o: '#e0ffff' }, { O: '#ffd25a', o: '#fff4c8' }];
+function orbPlant(kind) {   // a tall curving stalk with a big glowing orb on top (the orb flares on the beat)
+  const pal = { K: P.ink, S: '#7a3ab0', s: '#4e1f80', L: '#3fb890', D: '#1f6a5a', l: '#8ae0c0', ...ORB_COLS[kind % 3] };
+  const p = painter(32, 48);
+  curve(p, 16, 47, 9, 30, 18, 17, 1.9, 1.3, 'S');
+  p.poly([[16, 45], [3, 37], [9, 47]], 'L'); p.poly([[17, 45], [30, 36], [25, 47]], 'L'); p.poly([[15, 41], [6, 30], [12, 42]], 'L');
+  p.line(15, 44, 6, 39, 'l'); p.line(18, 44, 27, 38, 'l');
+  p.shade('S', 's', 1, 0, 1); p.shade('L', 'D', 0, 1, 1);
+  p.ellipse(18, 10, 7.5, 7.5, 'O'); p.ellipse(15.5, 7.5, 2.6, 2.4, 'o');
+  p.outline('K');
+  const full = canvasOf(32, 48, (g) => g.drawImage(spr(p.rows(), pal), 0, 0));
+  const q = painter(32, 48); q.ellipse(18, 10, 7.5, 7.5, 'g');
+  return { full, glow: canvasOf(32, 48, (g) => g.drawImage(spr(q.rows(), { g: pal.o }), 0, 0)) };
+}
+function spiralFernArt() {   // a purple fern whose fronds unroll in spirals, with a glowing bud in each curl
+  return canvasOf(32, 40, (g) => {
+    const p = painter(32, 40);
+    for (const [x0, cx, cy, x1, y1, dir] of [[15, 6, 26, 7, 13, 1], [16, 15, 22, 16, 8, 1], [17, 27, 27, 25, 14, -1]]) {
+      curve(p, x0, 39, cx, cy, x1, y1, 1.5, 1, 'F');
+      for (let i = 0; i <= 28; i++) {   // the curl: a shrinking coil from the end of the frond
+        const k = i / 28, th = Math.PI + k * Math.PI * 1.85, r = 4 - k * 2.8;
+        p.ellipse(x1 + dir * (4 + r * Math.cos(th)), y1 + r * Math.sin(th), 0.8, 0.8, 'F');
+      }
+      p.set(x1 + dir * 4, y1, 'T');
+      for (const t of [0.35, 0.6]) {   // leaflets
+        const a = (1 - t) * (1 - t), b = 2 * (1 - t) * t, d = t * t, lx = Math.round(a * x0 + b * cx + d * x1), ly = Math.round(a * 39 + b * cy + d * y1);
+        p.set(lx - 2, ly + 1, 'L'); p.set(lx - 1, ly, 'L'); p.set(lx + 2, ly + 1, 'L'); p.set(lx + 1, ly, 'L');
+      }
+    }
+    p.shade('F', 'f', 1, 0, 1);
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, F: '#b04ad8', f: '#7a2ab0', T: '#5ff2ff', L: '#3fb890' }), 0, 0);
+  });
+}
+function tendrilArt(f) {   // a clump of wavy tendrils with glowing beads on the tips, swaying (two frames)
+  return canvasOf(32, 40, (g) => {
+    const p = painter(32, 40);
+    [[6, 11], [11, 5], [17, 3], [23, 6], [27, 12]].forEach(([tx, ty], i) => {
+      const sw = (f ? 1 : -1) * (i % 2 ? 2 : -1);
+      curve(p, 12 + i * 2, 35, tx + sw * 2 + (i - 2), 21, tx + sw, ty, 1.4, 0.8, 'T');
+      p.ellipse(tx + sw, ty, 1.9, 1.9, 'G');
+    });
+    p.ellipse(16, 36, 8, 3.6, 'B');
+    p.shade('B', 'b', 0, 1, 1); p.shade('T', 't', 1, 0, 1);
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, B: '#7a3ab0', b: '#4e1f80', T: '#c04ab0', t: '#8a2a80', G: f ? '#7af0ff' : '#ffd0f0' }), 0, 0);
+  });
+}
+function lanternTree() {   // a twisting purple tree hung with glowing lantern pods (they flare on the beat)
+  const pal = { K: P.ink, T: '#6a2a9a', t: '#4a1a70', C: '#c04ab0', c: '#8a2a80', l: '#e07ad8', P: '#ffd25a', p: '#ff9a3a' };
+  const pods = [[9, 28], [17, 32], [31, 31], [39, 27], [24, 24]];
+  const p = painter(48, 56);
+  curve(p, 24, 55, 18, 40, 25, 20, 3.6, 2.4, 'T');
+  p.poly([[20, 54], [13, 55], [21, 49]], 'T'); p.poly([[28, 54], [35, 55], [27, 49]], 'T');
+  p.ellipse(24, 14, 21, 9, 'C'); p.ellipse(10, 20, 9, 5, 'C'); p.ellipse(38, 19, 9, 5, 'C');
+  p.ellipse(22, 10, 12, 5, 'l');
+  p.shade('C', 'c', 0, 1, 2); p.recolour('T', 't', (x) => x >= 25);
+  for (const [px, py] of pods) { p.line(px, py - 8, px, py - 3, 'c'); p.ellipse(px, py, 2.2, 3, 'P'); p.set(px - 1, py - 1, 'p'); }
+  p.outline('K');
+  const full = canvasOf(48, 56, (g) => g.drawImage(spr(p.rows(), pal), 0, 0));
+  const q = painter(48, 56);
+  for (const [px, py] of pods) q.ellipse(px, py, 3, 3.8, 'g');
+  return { full, glow: canvasOf(48, 56, (g) => g.drawImage(spr(q.rows(), { g: '#fff4c8' }), 0, 0)) };
+}
+function bulbsArt() {   // a little cluster of glowing alien bulbs
+  return canvasOf(16, 16, (g) => {
+    const p = painter(16, 16);
+    p.line(4, 15, 4, 9, 'S'); p.line(11, 15, 10, 8, 'S'); p.line(8, 15, 8, 12, 'S');
+    p.poly([[4, 14], [1, 12], [4, 12]], 'L'); p.poly([[11, 14], [14, 11], [11, 12]], 'L');
+    p.ellipse(4, 8, 2.4, 2.8, 'A'); p.ellipse(10, 6, 2.8, 3.2, 'B'); p.ellipse(8, 10.5, 1.8, 2, 'C');
+    p.set(3, 7, 'W'); p.set(9, 5, 'W');
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, S: '#7a3ab0', A: '#ff6ac8', B: '#5fe8ff', C: '#ffd25a', W: '#ffffff', L: '#3fb890' }), 0, 0);
   });
 }
 function boomboxArt() {   // a big retro boombox; its speaker cones are drawn by the world, pumping on the beat
@@ -822,7 +911,14 @@ function speakerArt() {
 export function buildProps() {
   const two = (fn) => [fn(0), fn(1)];
   const shroom = (k) => { const s = giantShroom(k); return { img: [s.full], glow: s.glow, w: 2, h: 1 }; };
+  const orb = (k) => { const s = orbPlant(k); return { img: [s.full], glow: s.glow, w: 1, h: 1 }; };
+  const lantern = lanternTree();
   return {
+    orbplant: orb(0), orbplant2: orb(1), orbplant3: orb(2),
+    spiralfern: { img: [spiralFernArt()], w: 1, h: 1 },
+    tendril: { img: two(tendrilArt), w: 1, h: 1, anim: 30 },
+    lanterntree: { img: [lantern.full], glow: lantern.glow, w: 2, h: 1 },
+    bulbs: { img: [bulbsArt()], w: 1, h: 1 },
     bigtree: { img: [bigTreeArt()], w: 2, h: 1 },
     glowflower: { img: two(glowFlowerArt), w: 1, h: 1, anim: 24 },
     pillar: { img: [pillarArt()], w: 1, h: 1 },

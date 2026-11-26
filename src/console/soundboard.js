@@ -15,7 +15,7 @@ const WHERE = {
   shop: "Mossa's stall", wilds: 'the Crimson Wilds', wilds2: 'the Wilds, taking turns', ride: 'riding your companion',
   enya: "Enya's echo rides in", nest: 'near the scrap nest', battle: 'wild battles', battle2: 'wild battles', boss: 'the boss fight',
   victory: 'after a win', chapter: 'end of Chapter 1', jungle: 'the Whisperwood', jungle2: 'the Whisperwood, taking turns',
-  groove: 'the Shroom Groove', groove2: 'the Groove, taking turns', vision: 'visions beyond the veil', ghoul: 'ghoul battles',
+  groove: 'the Jelly Jam', groove2: 'the Jelly Jam, taking turns', vision: 'visions beyond the veil', ghoul: 'ghoul battles',
 };
 const battler = (n) => ({ rows: BATTLERS[n].rows, pal: BATTLERS[n].pal });
 const ICONS = {

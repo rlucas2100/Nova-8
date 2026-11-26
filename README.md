@@ -11,18 +11,18 @@ scrambles your memory: at first you can only mumble "Em... Gem...", and the stor
 Choose a companion (NOVA the tiger, EMBER or AZURE the dragon, or LUMI the glowing octopus), cross into the
 Crimson Wilds, battle wild creatures and bring back your ship's three missing parts. Enya reaches you as an
 echo from beyond the veil, through the Celestial Gem (her diamond necklace), with the Emerald Tiger; the Whisperwood
-jungle hides the Veil Gate and its Light Keeper; and the jellyfolk of the Shroom Groove dance on mushroom
-islands floating in a purple sky. This is Chapter 1.
+jungle hides the Veil Gate and its Light Keeper; and the jellyfolk of the Jelly Jam dance on islands of
+purple alien plants floating in the sky. This is Chapter 1.
 
 - No image or audio files: every sprite, tile and prop is pixel art written in code, and the music and
   sound effects come from a small Web Audio "sound chip" (two pulse channels, a triangle and noise).
 - Plain JavaScript, no libraries. Vite only bundles it into one script and one stylesheet.
 - 160 x 144 screen, 60 updates a second, scaled up in whole pixels where it fits.
-- Nine memories to win back (the story so far, kept in your QUEST notes), your eyes turning from violet to
-  blazing green as your FURY builds in battle, NOVA's hearts and healing licks, and COSMIC TUBES that capture
+- Nine memories to win back (the story so far, kept in your QUEST notes), your green eyes blazing brighter
+  as your FURY builds in battle, NOVA's hearts and healing licks, and COSMIC TUBES that capture
   wild creatures in an infinity of light (eleven to collect).
 - 22 original tunes (each area has two backing tracks that take turns, riding has its own, the music turns tense
-  near the boss, and the Shroom Groove has a funk jam with a plucked bass line, while the boombox in the corner
+  near the boss, and the Jelly Jam has a funk jam with a plucked bass line, while the boombox in the corner
   of the screen and the console's own speaker pump along to the beat), jingles that duck the music, and
   era-style effects: a cha-ching coin, hops, companion wiggles, creature cries, voice blips. An in-game SOUND
   TEST, and a soundboard for the page (`<div data-castaways-soundboard>`).
@@ -37,6 +37,7 @@ islands floating in a purple sky. This is Chapter 1.
 | B | K, X or Backspace (back; in the world: hop) |
 | START (menu) | Esc or P |
 | SELECT (ride your companion; on the naming screen, a random name) | Shift or Q |
+| Fast-forward: 1×, 3× or 5× speed (for testing, or impatient heroes) | F, or the » speed button under the console |
 
 Turn round to face your companion or Enya and press A to give them a fuss or have a talk.
 
@@ -74,7 +75,7 @@ node tests/play.mjs  [url]                     # title, intro, naming, waking up
 node tests/play2.mjs [url] tiger|octo|dragon [red|blue]   # the whole chapter, sped up
 node tests/menus.mjs [url]                     # menus, shop, screen colours, each companion's moves
 node tests/levels.mjs [url]                    # the thorns, the Whisperwood (a capture, the Veil Gate, FURY),
-                                               # the Shroom Groove (the jelly ferry, the boombox, the dance)
+                                               # the Jelly Jam (the jelly ferry, the boombox, the dance)
 node tests/site.mjs  [base]                    # the games page on desktop and phone
 node tests/sound.mjs [base]                    # the grove, the companion chooser, hopping, the soundboard
 ```

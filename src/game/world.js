@@ -1,8 +1,8 @@
 /* The overworld: walking tile by tile, your companion and Enya's echo following (or carrying you), people
    to talk to, jewels to pick up, glowgrass and ferns where wild creatures hide, and doors to the next area.
-   Also: your eyes (violet, flickering green, blazing green when your warrior blood is up), NOVA's hearts,
-   the headaches from the crash (NOVA licks them better), and the Shroom Groove, where everything bops
-   along to the music: the dance floor, the giant mushrooms, the speakers and the boombox in the corner. */
+   Also: your green eyes (flashing greener now and then, blazing when your warrior blood is up), NOVA's hearts,
+   the headaches from the crash (NOVA licks them better), and the Jelly Jam, where everything bops
+   along to the music: the dance floor, the glowing plants, the speakers and the boombox in the corner. */
 import { W, H, spr, disc } from '../engine/pixel.js';
 import { paintMap, buildProps, TILE } from '../art/tiles.js';
 import { MAPS } from './maps.js';
@@ -16,6 +16,7 @@ import { SCRIPTS } from './story.js';
 import { Battle } from './battle.js';
 import { GEM, COIN, COIN_EDGE, DIAMOND, GEM_PAL, PART_ART, PART_PAL } from '../art/items.js';
 import { pauseMenu } from './scenes.js';
+import { hasMemory } from './memory.js';
 
 let PROPS = null;
 const painted = {};
@@ -85,7 +86,7 @@ export class World {
     this.hudNotes = [];
     this.gateGlow = 0;
     this.camShift = { x: 0, y: 0 };   // a script can nudge the camera to frame something
-    this.game.beatHud = !!m.boombox;   // the console's speaker grille pumps along in the Shroom Groove
+    this.game.beatHud = !!m.boombox;   // the console's speaker grille pumps along in the Jelly Jam
     this.banner = { str: m.name.toUpperCase(), t: 0 };
     this.updateMusic();
   }
@@ -102,7 +103,7 @@ export class World {
   musicHere() {
     const p = this.player, z = (this.map.zones || []).find((q) => p.x >= q.x && p.x < q.x + q.w && p.y >= q.y && p.y < q.y + q.h);
     if (z) return z.music;
-    if (this.st.riding && this.st.pet && !this.map.boombox) return 'ride';   // in the Groove, the groove wins
+    if (this.st.riding && this.st.pet && !this.map.boombox) return 'ride';   // in the Jelly Jam, its own tunes win
     return this.map.music;
   }
   updateMusic() { playMusic(this.musicHere()); }
@@ -202,7 +203,7 @@ export class World {
     if (this.throbT === undefined) this.throbT = 3000 + Math.random() * 3000;
     if (idle && st.pet && !st.flags.chapter1 && --this.throbT <= 0) { this.throbT = 8000 + Math.random() * 6000; this.throb(g); }
     // your eyes glow green for a while after your warrior blood boils
-    if (st.furyT > 0 && t % 12 === 0) this.particles.push({ x: p.px + 4 + rnd(0, 8), y: p.py + rnd(-2, 4), vx: rnd(-0.2, 0.2), vy: -rnd(0.3, 0.6), life: 24, age: 0, kind: 'spark', col: t % 24 ? '#5dff3a' : '#c8ffb0' });
+    if (st.furyT > 0 && t % 12 === 0) this.particles.push({ x: p.px + 4 + rnd(0, 8), y: p.py + rnd(-2, 4), vx: rnd(-0.2, 0.2), vy: -rnd(0.3, 0.6), life: 24, age: 0, kind: 'spark', col: t % 24 ? '#3ad07e' : '#b8f0d0' });
     // Enya is only an echo: diamond light glitters round her
     const en = this.followers.find((f) => f.kind === 'enya');
     if (en && t % 23 === 0) this.particles.push({ x: en.px + 4 + rnd(0, 8), y: en.py - 6 + rnd(0, 12), vx: 0, vy: -0.2, life: 26, age: 0, kind: 'spark', col: t % 46 ? '#ffffff' : '#c8f4ff' });
@@ -222,7 +223,7 @@ export class World {
     }
     this.particles = this.particles.filter((q) => q.age < q.life);
     this.emotes = this.emotes.filter((e) => ++e.t < e.life);
-    // big pale jellies drifting up through the Groove's sky, far away
+    // big pale jellies drifting up through the Jelly Jam's sky, far away
     if (this.map.boombox) {
       if (t % 170 === 0) this.bgFx.push({ x: (this.camX || 0) + rnd(10, W - 10), y: (this.camY || 0) + H + 30, vy: -rnd(0.12, 0.25), s: Math.floor(rnd(6, 11)), age: 0, c: NOTE_COLS[Math.floor(rnd(0, 5))] });
       for (const q of this.bgFx) { q.y += q.vy; q.age++; }
@@ -315,7 +316,7 @@ export class World {
       if (st.flags[tr.id]) continue;
       if (p.x >= tr.x && p.x < tr.x + tr.w && p.y >= tr.y && p.y < tr.y + tr.h && SCRIPTS[tr.script]) { this.run(SCRIPTS[tr.script], tr); return; }
     }
-    // wild creatures in the glowgrass, ferns and mushroom patches (they rustle as you push through)
+    // wild creatures in the glowgrass, ferns and sprout patches (they rustle as you push through)
     const t = TILE[this.tile(p.x, p.y)] || {};
     if (t.encounter) {
       sfx.rustle();
@@ -429,10 +430,15 @@ export class World {
       });
     }
   }
-  /* your eyes: violet with a flicker of green now and then, blazing green while your blood is up */
-  heroPal(t) { return this.st.furyT > 0 ? CH.HERO_PAL_FURY : t % 240 < 14 ? CH.HERO_PAL_SHIFT : CH.HERO_PAL; }
+  /* your eyes: green, flashing greener now and then (more often once your warrior blood has woken in a
+     battle), blazing while it's up */
+  heroPal(t) {
+    if (this.st.furyT > 0) return CH.HERO_PAL_FURY;
+    const woke = hasMemory(this.st, 'blood');
+    return t % (woke ? 150 : 300) < (woke ? 18 : 10) ? CH.HERO_PAL_SHIFT : CH.HERO_PAL;
+  }
 
-  /* the Shroom Groove: everyone dances on the beat */
+  /* the Jelly Jam: everyone dances on the beat */
   async dance(beats = 8) {
     const g = this.game, p = this.player, st = this.st;
     for (let i = 0; i < beats; i++) {
@@ -708,7 +714,7 @@ export class World {
   }
   onScreen(x, y, w, h) { return x + w > this.camX && x < this.camX + W && y + h > this.camY && y < this.camY + H; }
 
-  /* the Groove's sky jellies and its dance floor, lit up on the beat (under everything else) */
+  /* the Jelly Jam's sky jellies and its dance floor, lit up on the beat (under everything else) */
   drawGroove(ctx) {
     for (const q of this.bgFx) {
       const s = q.s, x = Math.round(q.x), y = Math.round(q.y);

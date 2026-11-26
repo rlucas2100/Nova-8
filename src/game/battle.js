@@ -16,7 +16,7 @@ const rnd = (a, b) => a + Math.random() * (b - a);
 const STAGE = { '-2': 0.6, '-1': 0.78, 0: 1, 1: 1.3, 2: 1.6 };
 const ACC_STAGE = { '-2': 0.62, '-1': 0.8, 0: 1, 1: 1.1, 2: 1.2 };
 const STAT_NAME = { atk: 'attack', def: 'defence', acc: 'accuracy', spd: 'speed' };
-const GREEN = '#5dff3a', VIOLET = '#8a44f0';
+const GREEN = '#3ad07e', CALM = '#0f6e3e';   // your eyes: blazing emerald, and their everyday dark emerald
 let PLANET = null;
 
 /* where you fight: the sky, the shapes on the horizon, the ground and what grows on it */
@@ -24,7 +24,7 @@ const BGS = {
   wilds: { sky: ['#1c0c3a', '#2e1660', '#4a2a8a', '#6a40c0'], far: '#3a1430', near: '#552042', ground: ['#b4443c', '#9c3434', '#cf5e48'], edge: '#7a2430', tuft: ['#5a2ca4', '#8a50e4', '#8ff0ff'], spot: 'rgba(60,10,40,0.35)', planet: 52, hills: 'mesa' },
   boss: { sky: ['#1a0820', '#2a0e30', '#3e1638', '#5a1e40'], far: '#2a0c1c', near: '#3a1222', ground: ['#5a2a34', '#4a2230', '#6a3440'], edge: '#2a1420', tuft: ['#7a7e94', '#b8bccc', '#8ff0ff'], spot: 'rgba(10,0,10,0.35)', planet: 70, hills: 'mesa' },
   jungle: { sky: ['#06201a', '#0c3026', '#164a34', '#22603e'], far: '#0a2a1a', near: '#123a24', ground: ['#25603f', '#1b4a30', '#3a8058'], edge: '#0a2416', tuft: ['#2fa070', '#3fc080', '#8ff0ff'], spot: 'rgba(0,20,10,0.35)', planet: null, hills: 'trees' },
-  groove: { sky: ['#2c0a56', '#3e127c', '#561ca2', '#7a2ac8'], far: '#3a1660', near: '#4a1f7a', ground: ['#4a1f7a', '#3a1660', '#6a2fa8'], edge: '#2a0e48', tuft: ['#ff6ab0', '#5ff2ff', '#ffd25a'], spot: 'rgba(30,0,40,0.35)', planet: 92, hills: 'shrooms' },
+  groove: { sky: ['#2c0a56', '#3e127c', '#561ca2', '#7a2ac8'], far: '#3a1660', near: '#4a1f7a', ground: ['#4a1f7a', '#3a1660', '#6a2fa8'], edge: '#2a0e48', tuft: ['#ff6ab0', '#5ff2ff', '#ffd25a'], spot: 'rgba(30,0,40,0.35)', planet: 92, hills: 'plants' },
   veil: { sky: ['#05020a', '#0e0618', '#1a0c2a', '#2a1440'], far: '#0a0414', near: '#140a22', ground: ['#1e1430', '#160e26', '#2a1c40'], edge: '#0a0414', tuft: ['#3a2a5a', '#6a4a9a', '#b06aff'], spot: 'rgba(0,0,0,0.4)', planet: null, hills: 'spires' },
 };
 function background(kind) {
@@ -43,10 +43,11 @@ function background(kind) {
     for (let x = 0; x < W; x++) { const h = 30 + Math.round(6 * Math.sin(x / 9) + 4 * Math.sin(x / 4.1) + 3 * Math.sin(x / 2.3)); g.fillRect(x, 60 - h, 1, h - 14); }
     for (let i = 0; i < 9; i++) { const tx = Math.floor(hash(i, 3, 21) * W); g.fillRect(tx, 40, 3 + (i % 3), 20); }
     g.fillStyle = '#ff9ad8'; for (let i = 0; i < 7; i++) g.fillRect(Math.floor(hash(i, 4, 21) * W), 26 + Math.floor(hash(i, 5, 21) * 12), 1, 1);
-  } else if (B.hills === 'shrooms') {   // the Groove: giant mushrooms on the horizon
-    for (const [mx, w, h] of [[14, 26, 30], [52, 18, 22], [86, 30, 36], [128, 22, 26], [156, 18, 20]]) {
-      g.fillRect(mx - 2, 60 - h + 8, 5, h - 8);
-      for (let dy = 0; dy <= 9; dy++) { const hw = Math.round((w / 2) * Math.sqrt(1 - (dy / 9.5) ** 2)); g.fillRect(mx - hw, 60 - h + 8 - dy, hw * 2, 1); }
+  } else if (B.hills === 'plants') {   // the Jelly Jam: tall alien plants on the horizon, orbs on their stalks
+    for (const [mx, h, r] of [[10, 34, 5], [30, 22, 3], [52, 40, 6], [74, 26, 4], [96, 36, 5], [118, 24, 3], [140, 38, 6], [156, 20, 3]]) {
+      g.fillRect(mx - 1, 60 - h, 3, h);
+      for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r * r - dy * dy)); g.fillRect(mx - w, 60 - h - r + dy, w * 2 + 1, 1); }
+      g.fillRect(mx - 6, 60 - Math.round(h * 0.4), 5, 2); g.fillRect(mx + 2, 60 - Math.round(h * 0.55), 5, 2);
     }
   } else {   // beyond the veil: twisted black spires
     for (let x = 0; x < W; x++) { const h = 8 + Math.round(Math.abs(Math.sin(x / 7)) * 14 * hash(Math.floor(x / 7), 0, 31)); g.fillRect(x, 60 - h, 1, h); }
@@ -57,7 +58,7 @@ function background(kind) {
   const grd = B.ground;
   for (let y = 60; y < 96; y++) for (let x = 0; x < W; x++) { const r = hash(x, y, 4); g.fillStyle = r < 0.08 ? grd[2] : r < 0.2 ? grd[1] : grd[0]; g.fillRect(x, y, 1, 1); }
   g.fillStyle = B.edge; g.fillRect(0, 60, W, 1);
-  // tufts (glowgrass, ferns, little mushrooms) with glowing tips
+  // tufts (glowgrass, ferns, alien sprouts) with glowing tips
   for (let i = 0; i < 22; i++) {
     const x = Math.floor(hash(i, 5, 7) * W), y = 64 + Math.floor(hash(i, 6, 7) * 30);
     g.fillStyle = B.tuft[0]; g.fillRect(x, y - 3, 1, 3); g.fillRect(x + 2, y - 4, 1, 4); g.fillStyle = B.tuft[1]; g.fillRect(x + 1, y - 5, 1, 5);
@@ -242,7 +243,7 @@ export class Battle {
     const g = this.game, st = g.state, me = this.me, foe = this.foe;
     this.fury = 0;
     sfx.fury();
-    this.cutin = { t: 0 };   // a close-up of your eyes, turning from violet to blazing green
+    this.cutin = { t: 0 };   // a close-up of your green eyes, blazing brighter and brighter
     await g.until(() => this.cutin.t >= 72);
     this.cutin = null;
     st.furyT = 2400;         // they stay green for a while afterwards
@@ -657,7 +658,7 @@ export class Battle {
     if (this.levelBox) this.levelBox.t++;
     if (this.cutin) this.cutin.t++;
     // fired up after a WARRIOR STRIKE: green sparks rise round your companion
-    if (this.aura && !this.anim.me.hide && this.t % 5 === 0) this.fx.push({ k: 'dot', x: 50 + rnd(-14, 14), y: 88, vx: rnd(-0.1, 0.1), vy: -rnd(0.5, 1), life: 26, t: 0, col: this.t % 10 ? GREEN : '#c8ffb0' });
+    if (this.aura && !this.anim.me.hide && this.t % 5 === 0) this.fx.push({ k: 'dot', x: 50 + rnd(-14, 14), y: 88, vx: rnd(-0.1, 0.1), vy: -rnd(0.5, 1), life: 26, t: 0, col: this.t % 10 ? GREEN : '#b8f0d0' });
     // Enya's echo glitters
     if (this.enyaHere && this.t % 19 === 0) this.fx.push({ k: 'dot', x: rnd(6, 34), y: rnd(46, 80), vx: 0, vy: -0.25, life: 24, t: 0, col: this.t % 38 ? '#ffffff' : '#c8f4ff' });
   }
@@ -737,11 +738,11 @@ export class Battle {
   /* the close-up of your eyes as your warrior blood takes over */
   drawCutIn(ctx) {
     const t = this.cutin.t, slide = Math.min(1, t / 8), out = t > 62 ? Math.min(1, (t - 62) / 8) : 0;
-    const k = Math.min(1, Math.max(0, (t - 14) / 24)), iris = mix(VIOLET, GREEN, k), y0 = 38, h = 36;
+    const k = Math.min(1, Math.max(0, (t - 14) / 24)), iris = mix(CALM, GREEN, k), y0 = 38, h = 36;
     ctx.save();
     ctx.translate(Math.round(-W * (1 - slide) + W * out), 0);
     ctx.fillStyle = '#0a0618'; ctx.fillRect(0, y0, W, h);
-    for (let i = 0; i < 14; i++) { ctx.fillStyle = k > 0.5 ? (i % 2 ? '#1f6a2a' : '#123a1a') : (i % 2 ? '#3a1a6a' : '#22103e'); ctx.fillRect((i * 37 + t * 9) % (W + 20) - 20, y0 + 2 + ((i * 7) % (h - 4)), 18, 1); }
+    for (let i = 0; i < 14; i++) { ctx.fillStyle = k > 0.5 ? (i % 2 ? '#2f8a3a' : '#1a5a24') : (i % 2 ? '#1a4a24' : '#0f2a16'); ctx.fillRect((i * 37 + t * 9) % (W + 20) - 20, y0 + 2 + ((i * 7) % (h - 4)), 18, 1); }
     ctx.fillStyle = '#ffd0a6'; ctx.fillRect(16, y0 + 5, W - 32, h - 8);
     ctx.fillStyle = '#e09a6a'; ctx.fillRect(16, y0 + h - 5, W - 32, 2);
     ctx.fillStyle = '#4a2c1c'; ctx.fillRect(16, y0 + 3, W - 32, 5);
@@ -767,7 +768,7 @@ export class Battle {
       }
     }
     ctx.restore();
-    ctx.fillStyle = k > 0.9 ? GREEN : '#b48cff'; ctx.fillRect(0, y0 - 1, W, 1); ctx.fillRect(0, y0 + h, W, 1);
+    ctx.fillStyle = k > 0.9 ? GREEN : CALM; ctx.fillRect(0, y0 - 1, W, 1); ctx.fillRect(0, y0 + h, W, 1);
   }
   drawPanels(ctx) {
     const me = this.me, foe = this.foe;
@@ -779,7 +780,7 @@ export class Battle {
     text(ctx, me.disp + '/' + me.maxHp, 73, 15, C.text, { align: 'right' });
     text(ctx, 'EN', 7, 23, C.dim); bar(ctx, 19, 25, 54, me.en / me.maxEn, C.cyan);
     this.drawFuryEye(ctx, 7, 31);
-    bar(ctx, 19, 33, 54, this.fury / 100, this.fury >= 100 && this.t % 10 < 5 ? '#ffffff' : mix(VIOLET, GREEN, this.fury / 100));
+    bar(ctx, 19, 33, 54, this.fury / 100, this.fury >= 100 && this.t % 10 < 5 ? '#ffffff' : mix(CALM, GREEN, this.fury / 100));
     // the foe, top right
     const nm = foe.short;
     box(ctx, 82, 2, 76, 22);
@@ -792,9 +793,9 @@ export class Battle {
     if (tags.length) { box(ctx, 82, 23, measure(tags.join(' ')) + 10, 12, { bg: C.bg2 }); text(ctx, tags.join(' '), 87, 26, C.red); }
     if (me.status.burn) { box(ctx, 2, 41, 26, 12, { bg: C.bg2 }); text(ctx, 'BRN', 7, 44, C.red); }
   }
-  /* a little eye: violet, turning green as your FURY builds */
+  /* a little eye: green, blazing brighter as your FURY builds */
   drawFuryEye(ctx, x, y) {
-    const iris = this.fury >= 100 && this.t % 10 < 5 ? '#c8ffb0' : mix(VIOLET, GREEN, this.fury / 100);
+    const iris = this.fury >= 100 && this.t % 10 < 5 ? '#b8f0d0' : mix(CALM, GREEN, this.fury / 100);
     ctx.fillStyle = '#1a0f2e'; ctx.fillRect(x + 1, y, 7, 1); ctx.fillRect(x, y + 1, 9, 3); ctx.fillRect(x + 1, y + 4, 7, 1);
     ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 1, y + 1, 7, 3);
     ctx.fillStyle = iris; ctx.fillRect(x + 3, y + 1, 3, 3);

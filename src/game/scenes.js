@@ -11,7 +11,7 @@ import { BATTLERS } from '../art/battlers.js';
 import { buildProps } from '../art/tiles.js';
 import { World } from './world.js';
 import { SCRIPTS } from './story.js';
-import { MOVES, ITEMS, JEWELS, PARTS, COMPANIONS, BLUE_DRAGON, WILD, CATCHABLE, MEMORIES, HERO_NAMES, statsAt, companionStats, companionArt, xpToNext, MAX_EN } from './data.js';
+import { MOVES, ITEMS, JEWELS, PARTS, COMPANIONS, BLUE_DRAGON, WILD, CATCHABLE, MEMORIES, HERO_NAMES, DEFAULT_NAMES, statsAt, companionStats, companionArt, xpToNext, MAX_EN } from './data.js';
 import { memoryCount } from './memory.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -167,7 +167,8 @@ export class Intro {
   enter() { playMusic('intro'); }
   async go() {
     const g = this.game;
-    const s = (str) => g.say(str, { auto: 70 });
+    // each line stays up long enough to read (longer lines longer), with the ▼ showing that A moves on sooner
+    const s = (str) => g.say(str, { auto: Math.round(90 + str.length * 2.5), more: true });
     await g.wait(30);
     if (this.skipped) return;
     await s('Your homeworld is under attack. Your family have been warriors for generations...');
@@ -176,7 +177,9 @@ export class Intro {
     if (this.skipped) return;
     this.scene = 'space';
     sfx.memory();
-    await s('Your long-lost love. Her last signal came from the purple planet KIRRA...');
+    await s('Your childhood sweetheart. Your long-lost love.');
+    if (this.skipped) return;
+    await s('Her last signal came from the purple planet KIRRA...');
     if (this.skipped) return;
     this.phase = 1;
     sfx.zap();
@@ -278,7 +281,7 @@ export class Intro {
    Type it, pick letters, or let RANDOM (or SELECT) pick one; leave it empty for the one shown faintly. */
 const GRID = ['ABCDEFGHI', 'JKLMNOPQR', 'STUVWXYZ-'];
 export class Create {
-  constructor(game) { this.game = game; this.opaque = true; this.t = 0; this.name = ''; this.cx = 0; this.cy = 0; this.ghost = pick(HERO_NAMES); }
+  constructor(game) { this.game = game; this.opaque = true; this.t = 0; this.name = ''; this.cx = 0; this.cy = 0; this.ghost = pick(DEFAULT_NAMES); }
   enter() { this.game.say('Ugh... your head is pounding. What was your name again...?', { auto: 0 }); }
   get textInput() { return true; }
   typeChar(ch) {
@@ -328,7 +331,7 @@ export class Create {
   draw(ctx) {
     sky(ctx, '#0c0420', '#140832', '#1c0c3a');
     stars(ctx, this.t, 0.1, 40);
-    // you, with your violet eyes (and a flicker of green now and then)
+    // you, with your green eyes (flashing greener now and then)
     const pal = this.t % 200 < 14 ? CH.HERO_PAL_SHIFT : CH.HERO_PAL;
     ctx.drawImage(spr(CH.HERO.down[0], pal), 12, 8, 32, 32);
     text(ctx, 'YOUR NAME?', 52, 10, '#ffd23a');

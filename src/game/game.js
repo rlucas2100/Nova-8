@@ -2,6 +2,7 @@
    update, fades and screen shake, the save file, and little helpers the story scripts await
    (say, ask, wait). The console shell (src/console) owns the canvas, the buttons and the sound switch. */
 import { W, H } from '../engine/pixel.js';
+import { text } from '../engine/font.js';
 import { Dialog, Menu, Toast, C } from './ui.js';
 import { playMusic, sfx } from '../engine/audio.js';
 import { movesAt } from './data.js';
@@ -67,7 +68,8 @@ export class Game {
     this.settings = Object.assign({ textSpeed: 'normal', screen: 'colour' }, readJSON(SETTINGS_KEY) || {});
     this.state = null;
     this.paused = false;
-    this.beatHud = false;   // in the Shroom Groove: the console's speaker pumps along to the music
+    this.beatHud = false;   // in the Jelly Jam: the console's speaker pumps along to the music
+    this.speed = 1;         // 1, 3 or 5 game updates per frame (the console's speed button, or F)
     this.lut = null;
     this.setScreen(this.settings.screen);
   }
@@ -165,6 +167,7 @@ export class Game {
     this.toasts.forEach((t, i) => t.draw(ctx, i));
     if (this.flashT > 0) { ctx.globalAlpha = this.flashT / this.flashMax; ctx.fillStyle = this.flashColour; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
     if (this.fadeLevel > 0) { ctx.globalAlpha = Math.min(1, this.fadeLevel); ctx.fillStyle = this.fadeColour; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+    if (this.speed > 1) text(ctx, '▶▶' + this.speed + 'x', 3, H - 9, C.gold, { outline: C.ink });   // fast-forward is on
     if (this.lut) this.recolour();
   }
   /* the four-shade screens: brightness bands with a little ordered dither */

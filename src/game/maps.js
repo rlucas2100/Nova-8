@@ -1,5 +1,5 @@
 /* The areas of Chapter 1 on planet Kirra: Bloomhaven, the Crimson Wilds, the Whisperwood (a jungle
-   east of the Wilds) and the Shroom Groove (floating mushroom islands below the Wilds' cliffs).
+   east of the Wilds) and the Jelly Jam (islands of purple alien plants floating below the Wilds' cliffs).
    Ground letters are explained in src/art/tiles.js (TILE). Props, people, pick-ups and triggers are
    listed per map; a prop's x, y is the top-left tile of its solid footprint, and a prop or person
    with a flag disappears once that flag is set. */
@@ -148,7 +148,7 @@ export const WILDS = {
     { t: 'sign', x: 2, y: 10, text: 'THE CRIMSON WILDS\nWEST: Bloomhaven.  Stay out of the glowgrass if your companion is tired!' },
     { t: 'sign', x: 25, y: 25, text: 'SOUTH-EAST: the scrap nest.\nSomething big has been dragging metal in there...' },
     { t: 'sign', x: 37, y: 11, text: 'EAST: the WHISPERWOOD.\nThe old jungle, where the veil between worlds is thin.' },
-    { t: 'sign', x: 29, y: 4, text: 'JELLY EXPRESS\nDown to the SHROOM GROOVE, where the river falls into the sky!' },
+    { t: 'sign', x: 29, y: 4, text: 'JELLY EXPRESS\nDown to the JELLY JAM, where the river falls into the sky!' },
     { t: 'thorns', x: 42, y: 12, id: 'thorns', talk: 'thorns', flag: 'thorns-cleared' },
   ],
   npcs: [
@@ -187,7 +187,7 @@ export const WILDS = {
   ],
 };
 
-/* only where the ground is already c0: a blob of c (ferns in a glade, mushrooms on an island) */
+/* only where the ground is already c0: a blob of c (ferns in a glade, sprouts on an island) */
 function patch(m, cx, cy, rx, ry, c0, c, seed) {
   for (let y = Math.floor(cy - ry - 1); y <= cy + ry + 1; y++) for (let x = Math.floor(cx - rx - 1); x <= cx + rx + 1; x++) {
     const dx = (x - cx) / rx, dy = (y - cy) / ry;
@@ -250,12 +250,12 @@ export const JUNGLE = {
   ],
 };
 
-/* ---------- the Shroom Groove: mushroom islands floating in a purple sky ---------- */
+/* ---------- the Jelly Jam: islands of purple alien plants floating in the sky (the map id stays 'groove') ---------- */
 function buildGroove() {
   const W = 36, H = 28, m = grid(W, H, 'Y');
   m.blob(5.5, 14, 4.2, 3.6, 'q', 0.25, 60);     // where the jelly ferry drops you
   m.blob(18, 13.5, 6.8, 5.2, 'q', 0.2, 61);     // jelly town, round DJ JIGGLE's boombox
-  m.blob(18.5, 4, 5.5, 2.6, 'q', 0.25, 62);     // the giant mushroom wood
+  m.blob(18.5, 4, 5.5, 2.6, 'q', 0.25, 62);     // the lantern-tree wood
   m.blob(16, 23.5, 5.5, 2.6, 'q', 0.25, 63);    // the south island
   m.blob(30, 13, 3.8, 3.4, 'q', 0.25, 64);      // a little island to the east
   for (let x = 9; x <= 12; x++) m.set(x, 14, 'c');
@@ -268,19 +268,20 @@ function buildGroove() {
 const GROOVE_ROWS = buildGroove();
 
 export const GROOVE = {
-  id: 'groove', name: 'Shroom Groove', music: 'pl:groove',
+  id: 'groove', name: 'The Jelly Jam', music: 'pl:groove',
   boombox: true,                                   // the boombox in the corner of the screen pumps to the beat
   dancefloor: { x: 14, y: 13, w: 8, h: 3 },        // squares that light up on the beat
   rows: GROOVE_ROWS,
   props: [
     { t: 'boombox', x: 17, y: 11, id: 'boombox', text: "DJ JIGGLE's boombox. The bass makes your teeth buzz!" },
     { t: 'speaker', x: 15, y: 11 }, { t: 'speaker', x: 21, y: 11 },
-    { t: 'gshroom', x: 14, y: 4 }, { t: 'gshroom3', x: 22, y: 4 }, { t: 'gshroom2', x: 19, y: 2 },
-    { t: 'gshroom', x: 12, y: 15 }, { t: 'gshroom2', x: 22, y: 16 }, { t: 'gshroom3', x: 3, y: 12 },
-    { t: 'gshroom', x: 19, y: 23 }, { t: 'gshroom2', x: 31, y: 11 },
-    { t: 'minishroom', x: 6, y: 16 }, { t: 'minishroom', x: 24, y: 12 }, { t: 'minishroom', x: 13, y: 22 }, { t: 'minishroom', x: 33, y: 13 }, { t: 'minishroom', x: 21, y: 6 },
+    { t: 'lanterntree', x: 14, y: 4 }, { t: 'orbplant2', x: 22, y: 4 }, { t: 'spiralfern', x: 23, y: 4 }, { t: 'gshroom2', x: 19, y: 2 },
+    { t: 'orbplant', x: 12, y: 15 }, { t: 'tendril', x: 13, y: 15 }, { t: 'lanterntree', x: 22, y: 16 },
+    { t: 'spiralfern', x: 3, y: 12 }, { t: 'orbplant2', x: 4, y: 12 },
+    { t: 'gshroom', x: 19, y: 23 }, { t: 'orbplant3', x: 31, y: 11 }, { t: 'tendril', x: 32, y: 11 },
+    { t: 'bulbs', x: 6, y: 16 }, { t: 'bulbs', x: 24, y: 12 }, { t: 'tendril', x: 13, y: 22 }, { t: 'bulbs', x: 33, y: 13 }, { t: 'minishroom', x: 21, y: 6 },
     { t: 'crystal2', x: 8, y: 12 }, { t: 'crystal2', x: 28, y: 15 },
-    { t: 'sign', x: 5, y: 12, text: 'SHROOM GROOVE\nFeel the beat! JELLY TOWN is east, over the cap bridge.' },
+    { t: 'sign', x: 5, y: 12, text: 'THE JELLY JAM\nFeel the beat! JELLY TOWN is east, over the leaf bridge.' },
   ],
   npcs: [
     { id: 'ferryUp', art: 'jelly', pal: 'gold', x: 0, y: 14, dir: 'down', talk: 'ferryUp', hover: true },

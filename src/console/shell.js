@@ -33,8 +33,9 @@ function el(tag, attrs = {}, kids = []) {
 }
 
 export function mountConsole(root) {
-  const prefs = Object.assign({ skin: 'tiger', backdrop: 'kirra', sound: true }, readJSON(PREFS) || {});
+  const prefs = Object.assign({ skin: 'tiger', backdrop: 'kirra', sound: true, speed: 1 }, readJSON(PREFS) || {});
   if (!SKINS.some((s) => s.id === prefs.skin)) prefs.skin = 'tiger';
+  if (![1, 3, 5].includes(prefs.speed)) prefs.speed = 1;
   setSound(prefs.sound);
   const savePrefs = () => writeJSON(PREFS, prefs);
 
@@ -94,11 +95,14 @@ export function mountConsole(root) {
   backSel.value = prefs.backdrop;
   const soundBtn = el('button', { type: 'button', class: 'n8-chip', 'aria-pressed': String(prefs.sound) }, [el('span', { text: prefs.sound ? '♪ sound on' : '♪ sound off' })]);
   const bigBtn = el('button', { type: 'button', class: 'n8-chip', title: 'Full screen' }, [el('span', { text: '⛶ big screen' })]);
+  /* fast-forward: the game runs 1, 3 or 5 times as fast (handy for testing; F does the same) */
+  const speedText = () => '» speed ' + prefs.speed + '×';
+  const speedBtn = el('button', { type: 'button', class: 'n8-chip', title: 'Game speed: 1×, 3× or 5× (or press F)', 'aria-pressed': String(prefs.speed > 1) }, [el('span', { text: speedText() })]);
   const tools = el('div', { class: 'n8-tools' }, [
     group('shell', skinBtns),
     group('screen', [screenSel]),
     group('backdrop', [backSel]),
-    el('div', { class: 'n8-tool' }, [soundBtn, document.fullscreenEnabled ? bigBtn : null]),
+    el('div', { class: 'n8-tool' }, [soundBtn, speedBtn, document.fullscreenEnabled ? bigBtn : null]),
   ]);
   const wrap = el('div', { class: 'n8-wrap' }, [stage, tools]);
   root.textContent = '';
@@ -114,6 +118,16 @@ export function mountConsole(root) {
     screen(name) { screenSel.value = name; },
   });
   screenSel.value = game.settings.screen;
+  game.speed = prefs.speed;
+  function cycleSpeed() {
+    prefs.speed = { 1: 3, 3: 5, 5: 1 }[prefs.speed] || 1;
+    game.speed = prefs.speed;
+    speedBtn.firstChild.textContent = speedText();
+    speedBtn.setAttribute('aria-pressed', String(prefs.speed > 1));
+    savePrefs();
+    sfx.select();
+    if (!running) game.draw();
+  }
   const boot = new Boot(game);
   game.push(boot);
 
@@ -126,6 +140,7 @@ export function mountConsole(root) {
       if (e.key === 'Backspace') { top.typeChar('\b'); e.preventDefault(); return; }
       if (e.key === 'Enter') { top.typeChar('\n'); e.preventDefault(); return; }
     }
+    if (e.code === 'KeyF') { e.preventDefault(); if (!e.repeat) cycleSpeed(); return; }   // fast-forward
     const b = KEYS[e.code];
     if (!b) return;
     e.preventDefault();
@@ -214,6 +229,7 @@ export function mountConsole(root) {
     savePrefs();
     if (prefs.sound) { unlockAudio(); sfx.select(); }
   });
+  speedBtn.addEventListener('click', cycleSpeed);
   bigBtn.addEventListener('click', () => {
     if (document.fullscreenElement) document.exitFullscreen();
     else stage.requestFullscreen().then(() => { n8.focus({ preventScroll: true }); play(); }).catch(() => {});
@@ -241,7 +257,7 @@ export function mountConsole(root) {
   let last = performance.now(), acc = 0, grooving = false;
   const STEP = 1000 / 60;
   const pressedBtns = { a: aBtn, b: bBtn, start: startBtn, select: selectBtn };
-  /* in the Shroom Groove the console's own speaker grille pumps along to the beat */
+  /* in the Jelly Jam the console's own speaker grille pumps along to the beat */
   function groove() {
     if (game.beatHud) {
       const b = musicBeat(), k = b ? Math.max(0, 1 - (b.beat - Math.floor(b.beat)) * 2.4) : 0;
@@ -253,10 +269,11 @@ export function mountConsole(root) {
     const dt = Math.min(100, now - last);
     last = now;
     if (running) {
-      acc += dt;
+      const k = game.speed || 1;   // fast-forward: k game updates for every 60th of a second
+      acc += dt * k;
       let n = 0;
-      while (acc >= STEP && n < 4) { game.update(); acc -= STEP; n++; }
-      if (n === 4) acc = 0;
+      while (acc >= STEP && n < 4 * k) { game.update(); acc -= STEP; n++; }
+      if (n >= 4 * k) acc = 0;
       for (const [k, b] of Object.entries(pressedBtns)) b.classList.toggle('is-down', input.held[k]);
       dpad.dataset.dir = ['up', 'down', 'left', 'right'].find((d) => input.held[d]) || '';
       groove();

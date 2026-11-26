@@ -24,11 +24,22 @@ await key('Space'); await sleep(400);
 await shot('menu');
 await key('Space'); await sleep(1200);   // NEW GAME
 await shot('intro');
-await sleep(3800); await shot("intro-home"); await sleep(3200); await shot("intro-signal");
+await sleep(3800); await shot("intro-home");
+// the story lines stay up long enough to read: the first one is still there ~5 s in
+const line = () => page.evaluate(() => { const g = document.querySelector('[data-nova8]').nova8.game; return g.top && g.top.kind === 'Dialog' ? g.top.lines.join(' ') : ''; });
+console.log((await line()).startsWith('Your homeworld') ? 'ok   the first story line is still up after ~5 s' : 'FAIL the first story line has gone: ' + (await line()));
+for (let i = 0; i < 3; i++) { await key('Space'); await sleep(250); }   // A moves on: to "Your childhood sweetheart..."
+await sleep(1600); await shot("intro-sweetheart");
+console.log((await line()).includes('childhood sweetheart') ? 'ok   the childhood sweetheart line' : 'FAIL expected the sweetheart line: ' + (await line()));
 await key("Escape"); await sleep(1500);   // skip
 await shot('remember');
 for (let i = 0; i < 10 && (await page.evaluate(() => { const g = document.querySelector('[data-nova8]').nova8.game; return !!g.top && g.top.kind === 'Dialog'; })); i++) { await key('Space'); await sleep(300); }   // close "What was your name again...?"
 await shot('name');
+const ghost = await page.evaluate(() => document.querySelector('[data-nova8]').nova8.game.top.ghost);
+console.log(['MANNY', 'SPACEY', 'RHINO'].includes(ghost) ? 'ok   default name ' + ghost : 'FAIL default name ' + ghost);
+const seen = new Set();
+for (let i = 0; i < 40; i++) { await key('ShiftLeft', 30); seen.add(await page.evaluate(() => document.querySelector('[data-nova8]').nova8.game.top.name)); }
+console.log(!seen.has('FINN') ? 'ok   RANDOM never says FINN (' + seen.size + ' names: ' + [...seen].slice(0, 12).join(' ') + ' ...)' : 'FAIL FINN is still there');
 await key('ShiftLeft'); await sleep(300); // SELECT: a random name
 await shot('random');
 for (let i = 0; i < 7; i++) await key('Backspace', 30);
@@ -40,6 +51,18 @@ await key('Space'); await sleep(2500);   // YES
 await shot('wake');
 for (let i = 0; i < 40; i++) { const t = await top(); if (t === 'World') { const busy = await page.evaluate(() => document.querySelector('[data-nova8]').nova8.game.top.busy); if (!busy) break; } await key('Space', 40); await sleep(300); }
 await shot('awake');
+// green eyes, and the speed button: 1x -> 3x -> 5x -> 1x, F does the same
+const eyes = await page.evaluate(() => { const w = document.querySelector('[data-nova8]').nova8.game.top; return [w.heroPal(100).E, w.heroPal(1).E]; });
+console.log(eyes[0] === '#0f6e3e' && eyes[1] === '#1f9e5c' ? 'ok   his eyes are dark emerald (' + eyes[0] + '), flashing greener now and then (' + eyes[1] + ')' : 'FAIL eyes ' + eyes);
+const speeds = [];
+const chip = await page.evaluateHandle(() => [...document.querySelectorAll('.n8-chip')].find((b) => b.textContent.includes('speed')));
+const speedNow = () => page.evaluate(() => document.querySelector('[data-nova8]').nova8.game.speed + ' ' + [...document.querySelectorAll('.n8-chip')].find((b) => b.textContent.includes('speed')).textContent);
+for (let i = 0; i < 3; i++) { await chip.click(); await sleep(250); speeds.push(await speedNow()); if (i === 0) { await page.focus('.n8'); await sleep(400); await shot('speed-3x'); } }
+await page.focus('.n8');
+await key('KeyF'); await sleep(200); speeds.push(await speedNow());
+await key('KeyF'); await key('KeyF'); await sleep(200); speeds.push(await speedNow());
+console.log(speeds.join(' | '));
+console.log(speeds[0].startsWith('3 ') && speeds[1].startsWith('5 ') && speeds[2].startsWith('1 ') && speeds[3].startsWith('3 ') && speeds[4].startsWith('1 ') ? 'ok   speed button and F cycle 1x, 3x, 5x' : 'FAIL speed cycle');
 console.log('top now:', await top());
 console.log(errors.length ? errors.join('\n') : 'no errors');
 await browser.close();

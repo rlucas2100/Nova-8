@@ -396,11 +396,11 @@ export const SCRIPTS = {
     await g.say('You reach out to touch one, and the world spins...');
     w.daze = 150; sfx.heartbeat(); g.flash('#2a0a4a', 30);
     await g.say('A flash: a girl with golden hair, bound in thorns just like these, and shadowy GHOULS laughing in the dark.');
-    st.furyT = 2400; sfx.fury(); g.shake(26, 3); g.flash('#5dff3a', 18);
+    st.furyT = 2400; sfx.fury(); g.shake(26, 3); g.flash('#3ad07e', 18);
     await g.say("Something snaps inside you. Your eyes blaze GREEN, and a warrior's strength floods your arms!");
     sfx.slash();
     w.removeProp('thorns');
-    w.sparkle(42 * 16 + 8, 12 * 16 + 4, 20, ['#5dff3a', '#c8ffb0', '#ffffff']);
+    w.sparkle(42 * 16 + 8, 12 * 16 + 4, 20, ['#3ad07e', '#b8f0d0', '#ffffff']);
     g.shake(12, 2);
     st.flags['thorns-cleared'] = true;
     await g.say('You tear the thorns apart with your bare hands! The trail east to the WHISPERWOOD is open.');
@@ -514,10 +514,10 @@ export const SCRIPTS = {
     g.save();
   },
 
-  /* ---------- the Shroom Groove ---------- */
+  /* ---------- the Jelly Jam ---------- */
   async ferryDown(g, w) {
-    await g.say("Bloop! Wanna see where the river goes? I'll float you down to the SHROOM GROOVE! Best party on all of KIRRA!", { name: FERRY });
-    if ((await g.ask('Float down to the SHROOM GROOVE?')) !== 0) { await g.say('Bloop! Any time!', { name: FERRY }); return; }
+    await g.say("Bloop! Wanna see where the river goes? I'll float you down to the JELLY JAM! Best party on all of KIRRA!", { name: FERRY });
+    if ((await g.ask('Float down to the JELLY JAM?')) !== 0) { await g.say('Bloop! Any time!', { name: FERRY }); return; }
     sfx.boing();
     await w.warp({ to: 'groove', tx: 3, ty: 14, dir: 'right' });
     if (once(g.state, 'groove-intro')) await SCRIPTS.grooveIntro(g, w);
@@ -530,10 +530,10 @@ export const SCRIPTS = {
   },
   async grooveIntro(g) {
     const st = g.state;
-    await g.say('THE SHROOM GROOVE: giant mushrooms on islands floating in a deep purple sky. Somewhere, a big beat is pumping!');
-    await g.say('The jellyfolk who live here bop along to the bass. Even the mushrooms pulse in time!');
+    await g.say('THE JELLY JAM: islands of glowing purple alien plants, floating in a deep purple sky. Somewhere, a big beat is pumping!');
+    await g.say('The jellyfolk who live here bop along to the bass. Even the plants pulse in time!');
     if (enyaWith(st)) await g.say('Ha! This place is brilliant. Reminds me of the dances back home in Tipperary.', { name: E });
-    await g.say('TIP: DJ JIGGLE is by the big boombox in JELLY TOWN, over the mushroom-cap bridge.');
+    await g.say('TIP: DJ JIGGLE is by the big boombox in JELLY TOWN, over the leaf bridge.');
     g.save();
   },
   async dj(g, w) {
@@ -556,9 +556,9 @@ export const SCRIPTS = {
     } else await g.say('Fresh moves, star traveller! Come back any time!', { name: DJ });
     g.save();
   },
-  async j1(g) { await g.say('Bloop bloop! Welcome to the SHROOM GROOVE! Down here, everything moves to the beat!', { name: 'BLOOP' }); },
+  async j1(g) { await g.say('Bloop bloop! Welcome to the JELLY JAM! Down here, everything moves to the beat!', { name: 'BLOOP' }); },
   async j2(g) {
-    await g.say('The giant mushrooms glow brighter every time the bass drops. Can you feel it in your tentacles?', { name: 'WOBBLE' });
+    await g.say('The glow-plants shine brighter every time the bass drops. Can you feel it in your tentacles?', { name: 'WOBBLE' });
     await hero(g, "...I don't have tentacles.");
     await g.say('Aww. You poor thing.', { name: 'WOBBLE' });
   },
@@ -567,7 +567,7 @@ export const SCRIPTS = {
     if (dazed(g.state) && once(g.state, 'm-j3')) await mutter(g, '...she used to hum on the walk home... the same little tune, every time...');
   },
   async j4(g) { await g.say('DJ JIGGLE found that boombox when it fell out of the sky. Now the party NEVER stops! Bloop!', { name: 'PLINK' }); },
-  async j5(g) { await g.say('Shh... the DRUMCAPS are practising their drum solos in the mushroom patch. They get grumpy if you interrupt!', { name: 'GLOOP' }); },
+  async j5(g) { await g.say('Shh... the DRUMCAPS are practising their drum solos in the sprout patch. They get grumpy if you interrupt!', { name: 'GLOOP' }); },
   async j6(g) {
     await g.say("Hmm-hmm-hmmm... Oh! I hum along with the stars. They're always singing, you know. You just have to be very quiet.", { name: 'HUM' });
     if (enyaWith(g.state)) await g.say('My gran used to say that too...', { name: E });

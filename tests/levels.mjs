@@ -1,5 +1,5 @@
 // The new story and levels, sped up: the thorns (green eyes), the Whisperwood (LUMEN, a COSMIC TUBE
-// capture, the Veil Gate vision and the GRIMGHOUL with a FURY burst), the Shroom Groove (the jelly
+// capture, the Veil Gate vision and the GRIMGHOUL with a FURY burst), the Jelly Jam (the jelly
 // ferry, the boombox, DJ JIGGLE's dance), talking to Enya's echo and petting NOVA, and the new screens.
 // node tests/levels.mjs [url]
 import puppeteer from 'puppeteer-core';
@@ -113,14 +113,14 @@ st = await state();
 check(st.flags['grimghoul-beaten'], 'the GRIMGHOUL is beaten');
 check(st.memories.includes('veil') && st.memories.includes('blood'), 'memories: THE OTHER SIDE and WARRIOR BLOOD');
 
-// ---- the Shroom Groove ----
+// ---- the Jelly Jam ----
 await G(`void (${game}).top.load('wilds', 27, 4, 'up')`); await sleep(400);
 await key('Space'); await sleep(700);
 for (let i = 0; i < 10 && (await top()) !== 'Menu'; i++) { await key('Space', 30); await sleep(200); }
 await key('Space'); await sleep(1500);   // YES
 await shot('groove-arrive');
 await mash(worldIdle, 40);
-check((await state()).map === 'groove', 'the jelly ferry floated us down to the Shroom Groove');
+check((await state()).map === 'groove', 'the jelly ferry floated us down to the Jelly Jam');
 await place(17, 14, 'up'); await sleep(900);
 await shot('groove-town');
 await sleep(400); await shot('groove-beat');

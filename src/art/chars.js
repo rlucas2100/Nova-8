@@ -1,5 +1,5 @@
 /* Walking sprites, 16 x 16: you, your companion, Enya on the Emerald Tiger, the people of Bloomhaven,
-   LUMEN the Light Keeper and the jellies of the Shroom Groove. One letter per pixel; each direction
+   LUMEN the Light Keeper and the jellies of the Jelly Jam. One letter per pixel; each direction
    has a standing frame and two steps, and facing left is the side frames mirrored. All original
    pixel art. */
 import { art, remap } from '../engine/pixel.js';
@@ -69,12 +69,12 @@ export const HERO = { down: build(BOY_DOWN_TOP, legsDown), up: build(BOY_UP_TOP,
 /* riding: just the top half, sat on the companion's back */
 export const HERO_TOP = { down: BOY_DOWN_TOP.slice(0, 10).concat(['..KTKTTWWTTKTK..']), up: BOY_UP_TOP.slice(0, 11), side: BOY_SIDE_TOP.slice(0, 11) };
 
-/* his eyes are violet, and they change: now and then a flicker of green comes through, and when his
-   warrior blood is up they blaze green */
+/* his eyes are a dark emerald green: now and then they flash greener (more often once his warrior blood has woken), and
+   while it's up they blaze */
 const SUIT = { K: INK, S: '#ffd0a6', s: '#e09a6a', T: '#2fc6b4', t: '#1b8f8c', W: '#f6f2ff', O: '#ff8a1e', G: '#ffd23a', g: '#8ff0ff', P: '#c8702a', p: '#8a4418', B: '#5a2f6e', H: '#4a2c1c', h: '#7a4a2c' };
-export const HERO_PAL = { ...SUIT, E: '#8a44f0' };
-export const HERO_PAL_SHIFT = { ...SUIT, E: '#2fd8a0' };
-export const HERO_PAL_FURY = { ...SUIT, E: '#5dff3a' };
+export const HERO_PAL = { ...SUIT, E: '#0f6e3e' };   // dark emerald
+export const HERO_PAL_SHIFT = { ...SUIT, E: '#1f9e5c' };
+export const HERO_PAL_FURY = { ...SUIT, E: '#3ad07e' };
 
 /* ---------- NOVA, the tiger ----------
    Ryan's own pixel tiger from the site (tiger.js), frame for frame.
@@ -424,7 +424,7 @@ export const LUMEN = art(`
 `);
 export const LUMEN_PAL = { K: '#2a1a3a', W: '#f2e6ff', s: '#9a5ae0', F: '#ffe8b0', c: '#e0b870', E: INK, A: '#fff2a0' };
 
-/* the jellies of the Shroom Groove: floating jellyfish folk who live for the beat.
+/* the jellies of the Jelly Jam: floating jellyfish folk who live for the beat.
    K outline, B bell, b rim, l shine, W eye white, E pupil, M mouth, T tentacles; DJ JIGGLE wears shades (G, g) */
 const JELLY_TOP = art(`
   ................

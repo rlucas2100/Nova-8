@@ -319,7 +319,7 @@ function grimghoul() {   // a hulking ghoul with long grasping arms
   return p.rows();
 }
 
-/* ---------- the Shroom Groove ---------- */
+/* ---------- the Jelly Jam ---------- */
 function bopjelly() {   // a sky jelly in tiny headphones
   const p = painter(32, 32);
   for (const [x0, cx, x1] of [[9, 6, 8], [13, 15, 12], [18, 16, 20], [22, 25, 24]]) stroke(p, x0, 17, cx, 24, x1, 31, (t) => 1.5 - t * 0.7, 'T');

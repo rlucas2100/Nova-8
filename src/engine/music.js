@@ -241,7 +241,7 @@ export const SONGS = {
     ],
   },
 
-  /* The Shroom Groove: a funk jam in sixteenths. The bass guitar (a plucked pulse over the triangle)
+  /* The Jelly Jam: a funk jam in sixteenths. The bass guitar (a plucked pulse over the triangle)
      bops along under offbeat chord stabs. Em7  Em7  A7  B7 */
   groove: {
     bpm: 104, div: 4,
@@ -264,7 +264,7 @@ export const SONGS = {
     ],
   },
 
-  /* The Shroom Groove, second tune: the jellies' jam, with a slap-bass breakdown. Em  Bm  C  B */
+  /* The Jelly Jam, second tune: the jellies' jam, with a slap-bass breakdown. Em  Bm  C  B */
   groove2: {
     bpm: 104, div: 4,
     tracks: [
@@ -386,8 +386,8 @@ export const TRACKS = [
   ['nest', 'The scrap nest'],
   ['jungle', 'The Whisperwood'],
   ['jungle2', 'Whisperwood stream'],
-  ['groove', 'Shroom Groove'],
-  ['groove2', 'Jelly jam'],
+  ['groove', 'The Jelly Jam'],
+  ['groove2', 'Bass breakdown'],
   ['vision', 'Beyond the veil'],
   ['battle', 'Wild battle'],
   ['battle2', 'Wild battle II'],

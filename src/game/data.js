@@ -21,8 +21,14 @@ export const ITEMS = {
   tube: { name: 'COSMIC TUBE', price: 8, desc: 'Holds an infinity of light. In battle, it captures a weakened wild creature.', capture: true },
 };
 
-/* the names RANDOM picks from on the naming screen (or when you leave it empty) */
-export const HERO_NAMES = ['KAI', 'RONAN', 'CORMAC', 'RIGEL', 'ATLAS', 'ZANE', 'FINN', 'JAX', 'ORRIN', 'CASSIUS', 'LEO', 'DECLAN'];
+/* the naming screen: one of the DEFAULT_NAMES is shown faintly to start with (and used if you leave it
+   empty); RANDOM picks from all of HERO_NAMES, Celtic and elvish-sounding names included (7 letters at most) */
+export const DEFAULT_NAMES = ['MANNY', 'SPACEY', 'RHINO'];
+export const HERO_NAMES = [
+  ...DEFAULT_NAMES, 'KAI', 'RIGEL', 'ATLAS', 'ZANE', 'JAX', 'ORRIN', 'LEO', 'CASSIUS',
+  'RONAN', 'CORMAC', 'DECLAN', 'OISIN', 'CIAN', 'CONALL', 'TADHG', 'BRAN',   // Celtic
+  'AELAR', 'ELDRIN', 'SILVAN', 'THAELIN', 'CAELUM', 'FAELAN',                // elvish-sounding
+];
 
 /* moves. pow = power (0 = no damage), en = energy cost, acc = % to hit.
    Extras: crit (extra crit chance), burn/daze/flinch (chance), hits [min, max], pierce (ignores
@@ -76,7 +82,7 @@ export const MOVES = {
   wail: { name: 'WAIL', pow: 32, acc: 90, en: 0, fx: 'wail', flinch: 0.25 },
   grasp: { name: 'GRASP', pow: 58, acc: 90, en: 0, fx: 'shadow' },
   gloom: { name: 'GLOOM WAVE', pow: 64, acc: 85, en: 0, fx: 'wail' },
-  // the Shroom Groove
+  // the Jelly Jam
   zapsting: { name: 'ZAP STING', pow: 40, acc: 95, en: 0, fx: 'zapsting', daze: 0.15 },
   bop: { name: 'BOP', pow: 34, acc: 95, en: 0, fx: 'bump' },
   drumroll: { name: 'DRUM ROLL', pow: 16, acc: 95, en: 0, fx: 'drum', hits: [2, 4] },
@@ -123,9 +129,9 @@ export const WILD = {
   mosshell: { name: 'MOSSHELL', art: 'mosshell', base: { hp: 20, atk: 7, def: 10, spd: 3 }, moves: ['shellbash', 'shellbash', 'harden', 'bloom'], xp: 13, catch: 0.6, intro: 'A MOSSHELL plods out of the ferns. A garden grows on its back!', desc: 'An old turtle with a little glowing garden on its shell.' },
   ghoul: { name: 'GHOUL', art: 'ghoul', base: { hp: 18, atk: 9, def: 6, spd: 8 }, moves: ['shadowclaw', 'wail', 'chill'], xp: 18, catch: 0, ghoul: true, intro: 'A GHOUL seeps out of the shadows! It came from beyond the veil...' },
   grimghoul: { name: 'GRIMGHOUL', art: 'grimghoul', base: { hp: 50, atk: 10, def: 8, spd: 7 }, moves: ['grasp', 'gloom', 'shadowclaw', 'chill', 'grasp'], xp: 55, catch: 0, ghoul: true, boss: true, big: true, intro: 'The GRIMGHOUL reaches for you with long, grasping claws!' },
-  // the Shroom Groove
+  // the Jelly Jam
   bopjelly: { name: 'BOPJELLY', art: 'bopjelly', base: { hp: 15, atk: 7, def: 5, spd: 8 }, moves: ['bop', 'zapsting', 'bop'], xp: 10, catch: 0.85, intro: 'A BOPJELLY bops down out of the purple sky!', desc: 'A sky jelly in tiny headphones. It bops along to any beat.' },
-  shroomboom: { name: 'DRUMCAP', art: 'shroomboom', base: { hp: 18, atk: 8, def: 7, spd: 5 }, moves: ['drumroll', 'sporebeat', 'bassdrop'], xp: 13, catch: 0.7, intro: 'A DRUMCAP drums its way out of the mushrooms!', desc: 'A mushroom whose cap is a drum. It has never missed a beat.' },
+  shroomboom: { name: 'DRUMCAP', art: 'shroomboom', base: { hp: 18, atk: 8, def: 7, spd: 5 }, moves: ['drumroll', 'sporebeat', 'bassdrop'], xp: 13, catch: 0.7, intro: 'A DRUMCAP drums its way out of the alien sprouts!', desc: 'A mushroom whose cap is a drum. It has never missed a beat.' },
 };
 const WILD_GROW = { hp: 4, atk: 1.5, def: 1.25, spd: 1.2 };
 const BOSS_GROW = { hp: 9, atk: 1.7, def: 1.4, spd: 1.1 };
