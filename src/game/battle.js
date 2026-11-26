@@ -243,8 +243,8 @@ export class Battle {
     const g = this.game, st = g.state, me = this.me, foe = this.foe;
     this.fury = 0;
     sfx.fury();
-    this.cutin = { t: 0 };   // a close-up of your green eyes, blazing brighter and brighter
-    await g.until(() => this.cutin.t >= 72);
+    this.cutin = { t: 0 };   // a close-up: his brows slam down and his eyes blaze as the power builds
+    await g.until(() => this.cutin.t >= 80);
     this.cutin = null;
     st.furyT = 2400;         // they stay green for a while afterwards
     await this.msg('Your eyes blaze green! The warrior blood of your ancestors surges!', 30);
@@ -735,35 +735,72 @@ export class Battle {
     }
     ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillRect(x + 1, y + 4, 1, 7);
   }
-  /* the close-up of your eyes as your warrior blood takes over */
+  /* the close-up as your warrior blood takes over, like a storm building: his brows slam down, his eyes narrow
+     and blaze emerald, he trembles, and the power flares UP around him (sparks and flames rise; nothing falls,
+     so it never reads as tears) */
   drawCutIn(ctx) {
-    const t = this.cutin.t, slide = Math.min(1, t / 8), out = t > 62 ? Math.min(1, (t - 62) / 8) : 0;
-    const k = Math.min(1, Math.max(0, (t - 14) / 24)), iris = mix(CALM, GREEN, k), y0 = 38, h = 36;
+    const t = this.cutin.t, slide = Math.min(1, t / 8), out = t > 70 ? Math.min(1, (t - 70) / 8) : 0;
+    const k = Math.min(1, Math.max(0, (t - 10) / 30)), iris = mix(CALM, GREEN, k), y0 = 38, h = 36, cy = y0 + 21;
     ctx.save();
     ctx.translate(Math.round(-W * (1 - slide) + W * out), 0);
     ctx.fillStyle = '#0a0618'; ctx.fillRect(0, y0, W, h);
-    for (let i = 0; i < 14; i++) { ctx.fillStyle = k > 0.5 ? (i % 2 ? '#2f8a3a' : '#1a5a24') : (i % 2 ? '#1a4a24' : '#0f2a16'); ctx.fillRect((i * 37 + t * 9) % (W + 20) - 20, y0 + 2 + ((i * 7) % (h - 4)), 18, 1); }
+    for (let i = 0; i < 14; i++) { ctx.fillStyle = k > 0.5 ? (i % 2 ? '#1f8a52' : '#12553a') : (i % 2 ? '#14452c' : '#0c2a1c'); ctx.fillRect((i * 37 + t * 9) % (W + 20) - 20, y0 + 2 + ((i * 7) % (h - 4)), 18, 1); }
+    if (k > 0.3) {   // emerald flames licking up both sides of his face
+      for (let x = 0; x < W; x++) {
+        if (x >= 15 && x < W - 15) continue;
+        const fh = Math.max(0, Math.round((h - 2) * ((k - 0.3) / 0.7) * (0.55 + 0.45 * Math.sin(t / 3 + x * 1.7))));
+        ctx.fillStyle = GREEN; ctx.fillRect(x, y0 + h - fh, 1, fh);
+        ctx.fillStyle = '#b8f0d0'; ctx.fillRect(x, y0 + h - Math.round(fh * 0.4), 1, Math.round(fh * 0.4));
+      }
+    }
+    if (k > 0.4) ctx.translate(((t * 7) % 3) - 1, ((t * 5) % 3) - 1);   // he trembles as the power builds
     ctx.fillStyle = '#ffd0a6'; ctx.fillRect(16, y0 + 5, W - 32, h - 8);
     ctx.fillStyle = '#e09a6a'; ctx.fillRect(16, y0 + h - 5, W - 32, 2);
     ctx.fillStyle = '#4a2c1c'; ctx.fillRect(16, y0 + 3, W - 32, 5);
+    for (let x = 18; x < W - 18; x += 7) { const sh = Math.round(k * (1 + (x % 3))); ctx.fillRect(x, y0 + 3 - sh, 2, sh); }   // his hair bristles
     for (let x = 16; x < W - 16; x += 6) ctx.fillRect(x, y0 + 8, 4, 2 + ((x / 6) % 3));
     ctx.fillStyle = '#7a4a2c'; for (let x = 22; x < W - 22; x += 12) ctx.fillRect(x, y0 + 4, 3, 1);
-    for (const [ex, side] of [[W / 2 - 28, 1], [W / 2 + 28, -1]]) {
-      const cy = y0 + 21;
-      // the brow, pulled down towards the middle as he gets angry
-      ctx.fillStyle = '#3a2014';
-      for (let i = 0; i < 24; i++) ctx.fillRect(ex - 12 + i, cy - 9 + Math.round((side > 0 ? i : 23 - i) * k * 0.12), 1, 2);
-      const rows = [8, 16, 20, 22, 22, 20, 16, 8];
-      ctx.fillStyle = '#1a0f2e'; rows.forEach((w, i) => ctx.fillRect(ex - w / 2 - 1, cy - 4 + i, w + 2, 1)); ctx.fillRect(ex - 4, cy - 5, 8, 1); ctx.fillRect(ex - 4, cy + 4, 8, 1);
-      ctx.fillStyle = '#ffffff'; rows.forEach((w, i) => ctx.fillRect(ex - w / 2, cy - 4 + i, w, 1));
-      disc(ctx, ex, cy, 4, iris);
-      disc(ctx, ex, cy, 2, mix(iris, '#1a0f2e', 0.35));
-      ctx.fillStyle = '#1a0f2e'; ctx.fillRect(ex - 1, cy - 2, 2, 4);
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(ex + 1, cy - 3, 2, 2);
-      if (k > 0.6) {   // the glow, and green lightning crackling out of the corners
-        ctx.globalAlpha = (k - 0.6) * 2 * (0.6 + 0.4 * Math.sin(t / 2));
-        ctx.fillStyle = GREEN; ctx.fillRect(ex - 15, cy - 1, 4, 2); ctx.fillRect(ex + 12, cy - 1, 4, 2);
-        for (let i = 0; i < 3; i++) { let lx = ex + side * -13, ly = cy + rnd(-3, 3); for (let s = 0; s < 6; s++) { lx -= side * rnd(1, 3); ly += rnd(-2, 2); ctx.fillRect(Math.round(lx), Math.round(ly), 1, 1); } }
+    if (k > 0.35) {   // the furrow between his brows
+      ctx.fillStyle = '#d08a5e';
+      for (let y = cy - 9; y <= cy - 4; y++) { const lean = y > cy - 7 ? 1 : 0; ctx.fillRect(W / 2 - 4 + lean, y, 1, 1); ctx.fillRect(W / 2 + 3 - lean, y, 1, 1); }
+    }
+    const rows = [8, 16, 20, 22, 22, 20, 16, 8], white = mix('#ffffff', '#b8f0d0', Math.max(0, (k - 0.6) * 1.5));
+    for (const [ex, side] of [[W / 2 - 28, 1], [W / 2 + 28, -1]]) {   // side 1: his nose is to the right
+      // the brow: heavy, and slammed down towards his nose
+      ctx.fillStyle = '#2a160c';
+      for (let i = 0; i <= 28; i++) {
+        const u = i / 28, bot = cy - 7 - Math.round((1 - u) * k * 1.5) + Math.round(u * k * 6), th = 2 + Math.round(k) + (u > 0.75 ? 1 : 0);
+        ctx.fillRect(ex - side * 14 + side * i, bot - th + 1, 1, th);
+      }
+      // the eye, narrowed by lids that follow the brow; the pupil shrinks to a pinpoint and the whites glow
+      ctx.fillStyle = '#1a0f2e'; ctx.fillRect(ex - 12, cy - 1, 1, 2); ctx.fillRect(ex + 11, cy - 1, 1, 2);
+      for (let dx = -11; dx <= 10; dx++) {
+        const u = Math.min(1, Math.max(0, (side * dx) / 22 + 0.5));
+        let top = 99, bot = -99;
+        rows.forEach((w, i) => { if (dx >= -w / 2 && dx < w / 2) { top = Math.min(top, cy - 4 + i); bot = Math.max(bot, cy - 4 + i); } });
+        top = Math.max(top, cy - 4 + Math.round(k * (0.5 + 3.5 * u)));
+        bot = Math.min(bot, cy + 3 - Math.round(k * (0.3 + 0.7 * u)));
+        if (top > bot) continue;
+        const lid = k > 0.3 ? 2 : 1;
+        ctx.fillStyle = '#1a0f2e'; ctx.fillRect(ex + dx, top - lid, 1, lid); ctx.fillRect(ex + dx, bot + 1, 1, 1);
+        for (let y = top; y <= bot; y++) {
+          const dy = y - cy, d2 = dx * dx + dy * dy;
+          let c = d2 <= 18 ? (d2 <= 5 ? mix(iris, '#06140c', 0.35) : iris) : white;
+          if (dx >= -1 && dx <= 0 && dy >= (k < 0.5 ? -2 : -1) && dy <= (k < 0.5 ? 1 : 0)) c = '#06140c';
+          ctx.fillStyle = c; ctx.fillRect(ex + dx, y, 1, 1);
+        }
+      }
+      if (k < 0.5) { ctx.fillStyle = '#ffffff'; ctx.fillRect(ex + 1, cy - 3, 2, 2); }   // the sparkle goes as the rage comes
+      if (k > 0.6) {   // a vein throbbing at his temple, a blazing streak flaring up and out of each eye, sparks rising
+        const ox = ex - side * 12, oy = cy - 1;
+        if (Math.sin(t / 3) > -0.4) {
+          const vx = ex - side * 19, vy = cy - 9;
+          ctx.fillStyle = '#e07a62'; ctx.fillRect(vx, vy, 1, 2); ctx.fillRect(vx - 1, vy + 2, 1, 1); ctx.fillRect(vx + 1, vy + 2, 1, 1);
+        }
+        ctx.globalAlpha = Math.min(1, (k - 0.6) * 2.5);
+        for (let s = 0, len = 6 + ((t >> 2) % 2); s < len; s++) { ctx.fillStyle = s < 2 ? '#e6fff0' : GREEN; ctx.fillRect(ox - side * s, oy - Math.round(s * 0.6), 1, 2); }
+        ctx.fillStyle = '#b8f0d0';
+        for (let i = 0; i < 5; i++) ctx.fillRect(ex - side * 10 + side * ((i * 5) % 22), Math.round(cy - 6 - ((t * 1.5 + i * 7) % 16)), 1, 1);
         ctx.globalAlpha = 1;
       }
     }

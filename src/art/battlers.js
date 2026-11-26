@@ -103,19 +103,28 @@ function octo() {
 function enya() {
   const p = painter(36, 42);
   tigerShape(p, 3, 10, true);
-  // Enya: flowing golden hair, green outfit with gold trim, one fist raised
-  p.poly([[11, 6], [6, 12], [5, 20], [9, 17], [8, 23], [13, 17]], 'H');                       // hair streaming back
+  // Enya: long golden hair framing her face (never over her eyes), both green eyes, a green dress with gold
+  // trim, the Celestial Gem on a fine chain at her throat, a shamrock clip in her hair, one fist raised
+  p.poly([[12, 3], [8, 6], [6, 11], [5, 17], [4, 23], [7, 21], [8, 26], [11, 21], [12, 15], [13, 9]], 'H');   // hair flowing down her back
   p.ellipse(15, 21, 4.5, 4, 'G');                                                              // hips on the saddle
-  p.rect(12, 13, 7, 8, 'G');                                                                   // body
-  p.line(12, 13, 18, 13, 'Y'); p.line(12, 20, 18, 20, 'Y');
+  p.rect(12, 14, 7, 7, 'G');                                                                   // dress
+  p.line(12, 20, 18, 20, 'Y');                                                                 // gold belt
   p.rect(16, 21, 3, 6, 'g'); p.rect(16, 26, 4, 2, 'Y');                                         // leg + boot
-  p.ellipse(15, 7, 4.3, 4.6, 'S');                                                             // face
-  p.poly([[10, 3], [15, 1], [20, 3], [19, 6], [16, 5], [11, 8]], 'H');                          // fringe
-  p.rect(10, 4, 2, 9, 'H');
-  p.set(17, 7, 'E'); p.set(16, 9, 'F');                                                         // green eye, shamrock
   p.line(19, 13, 23, 8, 'S'); p.line(19, 14, 23, 9, 'S');                                       // arm up
   p.rect(22, 5, 3, 4, 'G');                                                                    // fist (green glove)
-  p.set(15, 12, 'X'); p.set(16, 13, 'X'); p.set(14, 13, 'X');                                   // the diamond necklace
+  p.ellipse(15.5, 6.5, 5.2, 5, 'H');                                                           // hair around her head
+  p.rect(14, 11, 3, 3, 'S');                                                                   // neck
+  p.ellipse(15.5, 8.4, 4, 4.3, 'S');                                                           // face
+  p.poly([[10.5, 3], [16, 1.5], [20.5, 3], [20.5, 5.5], [17, 4.6], [13.5, 6], [11, 6.5]], 'H'); // side-swept fringe, above her eyes
+  p.rect(11, 6, 1, 7, 'H'); p.rect(20, 5, 1, 6, 'H');                                           // locks framing her face
+  p.shade('H', 'j', 1, 1, 1);
+  for (const [hx, hy] of [[12, 3], [13, 2], [14, 2], [9, 9], [8, 10], [8, 11], [7, 12], [7, 13]]) p.set(hx, hy, 'h');   // shine
+  p.set(13, 8, 'K'); p.set(13, 9, 'E'); p.set(17, 8, 'K'); p.set(17, 9, 'E');                   // both green eyes
+  p.set(12, 10, 'b'); p.set(18, 10, 'b'); p.set(15, 11, 'M');                                   // blush, smile
+  p.set(19, 2, 'F'); p.set(18, 3, 'F'); p.set(20, 3, 'F'); p.set(19, 3, 'F'); p.set(20, 4, 'g'); // shamrock clip
+  p.poly([[13, 14], [18, 14], [15.5, 16.5]], 'S');                                             // V neckline
+  p.set(13, 14, 'z'); p.set(14, 15, 'z'); p.set(17, 14, 'z'); p.set(16, 15, 'z');                // the fine chain...
+  p.set(15, 16, 'X'); p.set(14, 17, 'X'); p.set(15, 17, 'x'); p.set(16, 17, 'X'); p.set(15, 18, 'x');   // ...and the Celestial Gem
   p.outline('K');
   return p.rows();
 }
@@ -357,7 +366,7 @@ export const BATTLERS = {
   dragonRed: { rows: dragon(), pal: { K: '#2a0510', R: '#e8302a', r: '#a3141e', C: '#ffd9a0', c: '#e0a070', Y: '#ffd23a', w: '#ff7a3a', v: '#b8301e', E: K, W: '#ffffff' } },
   dragonBlue: { rows: null, pal: { K: '#06102e', R: '#2f7cf0', r: '#1a48a8', C: '#c8f4ff', c: '#80c0e8', Y: '#e6f0ff', w: '#6fe0ff', v: '#2a6ad0', E: K, W: '#ffffff' } },
   octo: { rows: octo(), pal: { K: '#140a30', L: '#5fc8f8', l: '#e0f4ff', D: '#3a6ad8', W: '#ffffff', E: K, M: '#c08cff', Y: '#ffd23a' } },
-  enya: { rows: enya(), pal: { K: '#06240f', O: '#2fb34a', D: '#1b7a33', L: '#a6f27a', W: '#eafff0', E: '#2fd85a', N: '#3a2a10', A: '#145a2a', Y: '#ffcf3a', G: '#1f6b34', g: '#134a22', H: '#f0b440', S: '#f2c08e', F: '#1fae4a', X: '#ffffff' } },
+  enya: { rows: enya(), pal: { K: '#06240f', O: '#2fb34a', D: '#1b7a33', L: '#a6f27a', W: '#eafff0', E: '#2fd85a', N: '#3a2a10', A: '#145a2a', Y: '#ffcf3a', G: '#1f6b34', g: '#134a22', H: '#f4c04a', h: '#fff0a8', j: '#c98a1e', S: '#f2c08e', F: '#3ae070', X: '#ffffff', x: '#9fe6ff', z: '#e6f4ff', M: '#d8606a', b: '#ffaa98' } },
   glorp: { rows: glorp(), pal: { K: '#0a2a10', G: '#7ee04a', g: '#3fa830', l: '#d8ffb0', A: '#3fa830', Y: '#ffe23a', W: '#ffffff', E: K } },
   sporelet: { rows: sporelet(), pal: { K: K, P: '#a050e0', p: '#6a2ab0', u: '#4a1a80', S: '#8ff0ff', C: '#f2e6d8', c: '#c8b4a0', W: '#ffffff' } },
   crystabug: { rows: crystabug(), pal: { K: K, B: '#4a2a7a', b: '#2e1a52', C: '#5ff2ff', c: '#2aa8d8', l: '#e0ffff', Y: '#ffd23a', W: '#ffffff' } },

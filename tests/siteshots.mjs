@@ -56,6 +56,8 @@ await waitFor(`(${game}).top.kind === 'Menu'`, 200, 50) || (await (async () => {
 for (let i = 0; i < 20 && (await top()) !== 'Menu'; i++) { await key('Space', 30); await sleep(150); }
 await G(`void (() => { const b = ${battle}; b.fury = 100; b.foe.hp = b.foe.maxHp; })()`);
 await key('Space'); await sleep(300); await key('KeyS', 30); await key('KeyS', 30); await key('KeyS', 30); await key('Space');   // FIGHT, HEALING LICK
+// Enya's DIAMOND FLASH can bring up a line that waits for a key first: keep reading until the close-up starts
+for (let i = 0; i < 60 && !(await G(`!!(${battle} || {}).cutin`)); i++) { await sleep(250); if (!(await G(`!!(${battle} || {}).cutin`)) && (await top()) !== 'Menu') await key('Space', 30); }
 await waitFor(`!!(${battle} || {}).cutin && ${battle}.cutin.t >= 50`, 400, 15);
 await grab('fury');
 await G(`void (() => { const b = ${battle}; if (b) b.foe.hp = 1; })()`);
