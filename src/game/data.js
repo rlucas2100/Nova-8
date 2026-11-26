@@ -1,0 +1,131 @@
+/* Numbers and words: companions, wild creatures, moves, items and jewels. */
+
+export const JEWELS = {
+  gold: { name: 'GOLD COIN', value: 1 },
+  emerald: { name: 'EMERALD', value: 5 },
+  sapphire: { name: 'SAPPHIRE', value: 5 },
+  ruby: { name: 'RUBY', value: 5 },
+  diamond: { name: 'DIAMOND', value: 10 },
+};
+
+export const PARTS = {
+  fuelcell: { name: 'FUEL CELL', where: 'Guarded by a huge THORNBACK in the west of the Wilds.' },
+  navcore: { name: 'NAV CORE', where: 'On the island in the middle of the river.' },
+  thruster: { name: 'THRUSTER', where: 'Worn as a shell by RUSTCLAW, in the scrap nest (south-east).' },
+};
+
+export const ITEMS = {
+  berry: { name: 'GLOWBERRY', price: 6, desc: 'A sweet glowing berry. Restores 30 HP.', heal: 30 },
+  tonic: { name: 'STAR TONIC', price: 8, desc: 'Fizzy and bright. Fills EN to the top.', en: 99 },
+  melon: { name: 'MOON MELON', price: 15, desc: 'A whole melon! Restores all HP and EN.', heal: 999, en: 99 },
+};
+
+/* moves. pow = power (0 = no damage), en = energy cost, acc = % to hit.
+   Extras: crit (extra crit chance), burn/daze/flinch (chance), hits [min, max], pierce (ignores
+   defence), heal (fraction of max HP), buff/debuff { stat, by }, dodge (avoid the next hit). */
+export const MOVES = {
+  claw: { name: 'CLAW', pow: 40, acc: 95, en: 0, fx: 'claw', desc: 'Swipe with sharp claws.' },
+  roar: { name: 'ROAR', pow: 0, acc: 100, en: 3, fx: 'roar', debuff: { stat: 'atk', by: -1 }, flinch: 0.3, desc: "A mighty roar. Lowers the foe's attack and may stun it." },
+  pounce: { name: 'POUNCE', pow: 70, acc: 90, en: 5, fx: 'pounce', crit: 0.2, desc: 'A huge leap. Often lands a critical hit.' },
+  tigerstep: { name: 'TIGER STEP', pow: 50, acc: 100, en: 6, fx: 'step', dodge: true, desc: 'Teleports in a flash of light, strikes, and dodges the next attack.' },
+  flameaura: { name: 'FLAME AURA', pow: 0, acc: 100, en: 6, fx: 'aura', buff: { stat: 'atk', by: 2 }, self: true, desc: 'Crimson flames blaze up: attack sharply up.' },
+  swipe: { name: 'SWIPE', pow: 40, acc: 95, en: 0, fx: 'claw', desc: 'A quick swipe of the claws.' },
+  flame: { name: 'FLAME', pow: 60, acc: 92, en: 4, fx: 'flame', burn: 0.3, desc: 'Breathes fire. May burn the foe.' },
+  frost: { name: 'FROST BREATH', pow: 58, acc: 92, en: 4, fx: 'frost', daze: 0.25, desc: 'Icy breath. May freeze the foe for a turn.' },
+  tailswipe: { name: 'TAIL SWIPE', pow: 45, acc: 95, en: 3, fx: 'tail', flinch: 0.35, desc: 'A spinning tail hit. May knock the foe off balance.' },
+  smoke: { name: 'SMOKE SCREEN', pow: 0, acc: 100, en: 3, fx: 'smoke', debuff: { stat: 'acc', by: -1 }, desc: "Crimson smoke. Lowers the foe's accuracy." },
+  mist: { name: 'MIST VEIL', pow: 0, acc: 100, en: 3, fx: 'mist', debuff: { stat: 'acc', by: -1 }, desc: "A cold mist. Lowers the foe's accuracy." },
+  dragondive: { name: 'DRAGON DIVE', pow: 85, acc: 88, en: 7, fx: 'dive', desc: 'Soars up and dives down hard.' },
+  whip: { name: 'TENTACLE WHIP', pow: 18, acc: 95, en: 0, fx: 'whip', hits: [2, 4], desc: 'Hits 2 to 4 times in a row.' },
+  ink: { name: 'INK CLOUD', pow: 0, acc: 100, en: 3, fx: 'ink', debuff: { stat: 'acc', by: -1 }, desc: "Squirts glowing ink. Lowers the foe's accuracy." },
+  glowpulse: { name: 'GLOW PULSE', pow: 0, acc: 100, en: 4, fx: 'glow', heal: 0.4, self: true, desc: 'A soothing glow that restores HP.' },
+  mindwave: { name: 'MIND WAVE', pow: 60, acc: 100, en: 5, fx: 'wave', pierce: true, desc: 'A clever psychic wave. Ignores defence.' },
+  prism: { name: 'PRISM SHIMMER', pow: 35, acc: 100, en: 6, fx: 'prism', daze: 0.6, desc: 'Dazzling colours. Often dazes the foe.' },
+  // the wild ones
+  bounce: { name: 'BOUNCE', pow: 35, acc: 95, en: 0, fx: 'bump' },
+  goo: { name: 'GOO', pow: 20, acc: 90, en: 0, fx: 'goo', debuff: { stat: 'spd', by: -1 } },
+  headbutt: { name: 'HEADBUTT', pow: 38, acc: 95, en: 0, fx: 'bump' },
+  spores: { name: 'SPORES', pow: 0, acc: 85, en: 0, fx: 'spores', debuff: { stat: 'acc', by: -1 } },
+  finslap: { name: 'FIN SLAP', pow: 36, acc: 95, en: 0, fx: 'bump' },
+  divebomb: { name: 'DIVE BOMB', pow: 52, acc: 85, en: 0, fx: 'bump' },
+  pinch: { name: 'PINCH', pow: 34, acc: 95, en: 0, fx: 'bump' },
+  shard: { name: 'CRYSTAL SHARD', pow: 46, acc: 90, en: 0, fx: 'shard' },
+  harden: { name: 'HARDEN', pow: 0, acc: 100, en: 0, fx: 'harden', buff: { stat: 'def', by: 1 }, self: true },
+  bite: { name: 'BITE', pow: 44, acc: 95, en: 0, fx: 'bump', flinch: 0.1 },
+  spikes: { name: 'SPIKE ROLL', pow: 50, acc: 88, en: 0, fx: 'bump' },
+  stomp: { name: 'STOMP', pow: 58, acc: 90, en: 0, fx: 'bump', flinch: 0.15 },
+  crush: { name: 'CRUSH CLAW', pow: 56, acc: 92, en: 0, fx: 'bump' },
+  scrapshot: { name: 'HOT SCRAP', pow: 44, acc: 95, en: 0, fx: 'shard', burn: 0.3 },
+  jet: { name: 'THRUSTER BLAST', pow: 72, acc: 80, en: 0, fx: 'jet' },
+};
+
+/* companions: stats at level 1 and growth per level; moves learned at a level */
+export const COMPANIONS = {
+  tiger: {
+    kind: 'TIGER', name: 'NOVA', art: 'tiger',
+    base: { hp: 30, atk: 11, def: 8, spd: 11 }, grow: { hp: 5, atk: 2.1, def: 1.5, spd: 1.7 },
+    learn: [[1, 'claw'], [1, 'roar'], [1, 'pounce'], [5, 'tigerstep'], [7, 'flameaura']],
+    blurb: 'A tiger cub with fiery stripes and bright green eyes. Strong claws, a mighty ROAR, and he can teleport a short way in a flash of light.',
+  },
+  dragon: {
+    kind: 'DRAGON', name: 'EMBER', art: 'dragonRed',
+    base: { hp: 32, atk: 10, def: 9, spd: 9 }, grow: { hp: 5.4, atk: 2, def: 1.6, spd: 1.5 },
+    learn: [[1, 'swipe'], [1, 'flame'], [1, 'tailswipe'], [5, 'smoke'], [7, 'dragondive']],
+    blurb: 'A baby dragon with shimmering scales. Breathes fire (or frost!), and packs a TAIL SWIPE.',
+  },
+  octo: {
+    kind: 'OCTOPUS', name: 'LUMI', art: 'octo',
+    base: { hp: 28, atk: 9, def: 8, spd: 12 }, grow: { hp: 4.6, atk: 1.9, def: 1.5, spd: 1.8 },
+    learn: [[1, 'whip'], [1, 'ink'], [1, 'glowpulse'], [5, 'mindwave'], [7, 'prism']],
+    blurb: 'A glowing octopus in tiny reading glasses. Very clever: LUMI heals herself and baffles foes with ink.',
+  },
+};
+export const BLUE_DRAGON = { name: 'AZURE', art: 'dragonBlue', swap: { flame: 'frost', smoke: 'mist' } };
+
+export const WILD = {
+  glorp: { name: 'GLORP', art: 'glorp', base: { hp: 14, atk: 6, def: 5, spd: 5 }, moves: ['bounce', 'bounce', 'goo'], xp: 8, intro: 'A GLORP oozes out of the glowgrass!' },
+  sporelet: { name: 'SPORELET', art: 'sporelet', base: { hp: 15, atk: 6, def: 6, spd: 4 }, moves: ['headbutt', 'headbutt', 'spores'], xp: 9, intro: 'A grumpy SPORELET pops up!' },
+  flitterfin: { name: 'FLITTERFIN', art: 'flitterfin', base: { hp: 12, atk: 7, def: 4, spd: 10 }, moves: ['finslap', 'finslap', 'divebomb'], xp: 9, intro: 'A FLITTERFIN zips out of the river spray!' },
+  crystabug: { name: 'CRYSTABUG', art: 'crystabug', base: { hp: 16, atk: 6, def: 9, spd: 3 }, moves: ['pinch', 'shard', 'harden'], xp: 11, intro: 'A CRYSTABUG clicks its crystal shell!', jewel: 0.8 },
+  thornback: { name: 'THORNBACK', art: 'thornback', base: { hp: 18, atk: 8, def: 7, spd: 6 }, moves: ['bite', 'spikes', 'bite'], xp: 14, intro: 'A spiky THORNBACK blocks the way!' },
+  thornAlpha: { name: 'THORNBACK ALPHA', short: 'ALPHA', art: 'thornAlpha', base: { hp: 36, atk: 9, def: 8, spd: 6 }, moves: ['bite', 'spikes', 'stomp'], xp: 30, boss: true, intro: 'The THORNBACK ALPHA charges!' },
+  rustclaw: { name: 'RUSTCLAW', art: 'rustclaw', base: { hp: 56, atk: 10, def: 9, spd: 5 }, moves: ['crush', 'scrapshot', 'jet', 'harden', 'crush'], xp: 50, boss: true, big: true, intro: 'RUSTCLAW rears up, its stolen THRUSTER blazing!' },
+};
+const WILD_GROW = { hp: 4, atk: 1.5, def: 1.25, spd: 1.2 };
+const BOSS_GROW = { hp: 9, atk: 1.7, def: 1.4, spd: 1.1 };
+
+export function statsAt(base, grow, lv) {
+  return {
+    hp: Math.round(base.hp + grow.hp * (lv - 1)),
+    atk: Math.round(base.atk + grow.atk * (lv - 1)),
+    def: Math.round(base.def + grow.def * (lv - 1)),
+    spd: Math.round(base.spd + grow.spd * (lv - 1)),
+  };
+}
+export function xpToNext(lv) { return 10 + lv * 10; }
+export const MAX_EN = (lv) => 10 + Math.floor(lv / 2);
+
+/* a new companion, as stored in the save file */
+export function newCompanion(species, variant = 'red', lv = 3) {
+  const s = COMPANIONS[species];
+  const blue = species === 'dragon' && variant === 'blue';
+  const c = { species, variant, name: blue ? BLUE_DRAGON.name : s.name, lv, xp: 0, moves: [] };
+  for (const [at, m] of s.learn) if (at <= lv) c.moves.push(blue && BLUE_DRAGON.swap[m] ? BLUE_DRAGON.swap[m] : m);
+  const st = statsAt(s.base, s.grow, lv);
+  c.hp = st.hp;
+  c.en = MAX_EN(lv);
+  return c;
+}
+export function companionStats(c) { const s = COMPANIONS[c.species]; return statsAt(s.base, s.grow, c.lv); }
+export function companionArt(c) { return c.species === 'dragon' ? (c.variant === 'blue' ? 'dragonBlue' : 'dragonRed') : COMPANIONS[c.species].art; }
+/* the moves a companion learns on reaching a level */
+export function learnsAt(c, lv) {
+  const s = COMPANIONS[c.species], blue = c.species === 'dragon' && c.variant === 'blue';
+  return s.learn.filter(([at]) => at === lv).map(([, m]) => (blue && BLUE_DRAGON.swap[m] ? BLUE_DRAGON.swap[m] : m));
+}
+
+export function newWild(species, lv) {
+  const w = WILD[species];
+  const st = statsAt(w.base, w.boss ? BOSS_GROW : WILD_GROW, lv);
+  return { species, name: w.name, short: w.short || w.name, art: w.art, lv, ...st, maxHp: st.hp, boss: !!w.boss, big: !!w.big, moves: w.moves.slice() };
+}

@@ -1,0 +1,2 @@
+# keep every text file with LF line endings, whatever the computer
+* text=auto eol=lf
