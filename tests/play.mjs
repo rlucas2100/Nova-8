@@ -24,11 +24,14 @@ await key('Space'); await sleep(400);
 await shot('menu');
 await key('Space'); await sleep(1200);   // NEW GAME
 await shot('intro');
-await key('Escape'); await sleep(1500);   // skip
-await shot('who');
-await key('Space'); await sleep(400);    // close "...Who are you?"
-await key('Space'); await sleep(400);    // pick boy
+await sleep(3800); await shot("intro-home"); await sleep(3200); await shot("intro-signal");
+await key("Escape"); await sleep(1500);   // skip
+await shot('remember');
+for (let i = 0; i < 10 && (await page.evaluate(() => { const g = document.querySelector('[data-nova8]').nova8.game; return !!g.top && g.top.kind === 'Dialog'; })); i++) { await key('Space'); await sleep(300); }   // close "What was your name again...?"
 await shot('name');
+await key('ShiftLeft'); await sleep(300); // SELECT: a random name
+await shot('random');
+for (let i = 0; i < 7; i++) await key('Backspace', 30);
 await key('KeyR'); await key('KeyY'); await key('KeyA'); await key('KeyN'); await sleep(200);
 await shot('typed');
 await key('Enter'); await sleep(800);

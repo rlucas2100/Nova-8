@@ -29,7 +29,9 @@ for (const [species, variant, lv] of [['tiger', 'red', 7], ['octo', 'red', 7], [
     await key('Space'); await sleep(300); await shot('party');
     await key('KeyD'); await sleep(300); await shot('party-enya');
     await key('KeyK'); await sleep(200); await key('KeyS'); await key('Space'); await sleep(300); await shot('bag');
+    await key('KeyK'); await sleep(200); await key('KeyS'); await key('Space'); await sleep(300); await shot('tubes');
     await key('KeyK'); await sleep(200); await key('KeyS'); await key('Space'); await sleep(300); await shot('quest');
+    await key('KeyD'); await sleep(300); await shot('memories');
     await key('KeyK'); await sleep(200); await key('KeyS'); await key('KeyS'); await key('Space'); await sleep(300); await shot('options');
     await key('KeyK'); await sleep(200); await key('KeyK'); await sleep(300);
     // shop

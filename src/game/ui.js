@@ -33,8 +33,15 @@ export function bar(ctx, x, y, w, frac, col, back = '#3a2a5a') {
 export function hpColour(frac) { return frac > 0.5 ? C.green : frac > 0.2 ? C.gold : C.red; }
 
 /* ---------- dialogue ----------
-   text with {gold}, {cyan}... colour tags is not needed: names are in CAPITALS, like old RPGs. */
+   text with {gold}, {cyan}... colour tags is not needed: names are in CAPITALS, like old RPGs.
+   opt.mutter: your confused, concussed mumbling, typed out slowly (slower still on the dots).
+   Any line that says "Em" or "Gem" makes NOVA's heart flutter (game.love). */
 const SPEED = { slow: 1, normal: 2, fast: 4 };
+const LOVE = /\b(e+m+|g+e+m+)\b/i;
+const VOICE_OF = {
+  SPRIG: 'robot', 'GATE DRONE': 'robot', ENYA: 'enya', MOSSA: 'low', PEBBLE: 'kid', SKYE: 'kid', BUD: 'kid',
+  LUMEN: 'lumen', 'DJ JIGGLE': 'dj', BLOOP: 'jelly', WOBBLE: 'jelly', SQUISH: 'jelly', PLINK: 'jelly', GLOOP: 'jelly', HUM: 'jelly', 'JELLY FERRY': 'jelly',
+};
 export class Dialog {
   constructor(game, str, opt = {}) {
     this.game = game;
@@ -49,14 +56,17 @@ export class Dialog {
     this.opaque = false;
     this.auto = opt.auto || 0;
     this.t = 0;
-    this.voice = opt.voice || ({ SPRIG: 'robot', 'GATE DRONE': 'robot', ENYA: 'enya', MOSSA: 'low', PEBBLE: 'kid', SKYE: 'kid', BUD: 'kid' }[this.name] || 'default');
+    this.mutter = !!opt.mutter;
+    this.voice = this.mutter ? 'mutter' : opt.voice || VOICE_OF[this.name] || 'default';
+    if (LOVE.test(str) && game.love) game.love();
   }
   get current() { return this.pages[this.page] || []; }
   get total() { return this.current.reduce((n, l) => n + l.length, 0); }
   update(g) {
     const inp = g.input;
     this.t++;
-    const speed = SPEED[g.settings.textSpeed] || 2;
+    let speed = SPEED[g.settings.textSpeed] || 2;
+    if (this.mutter) { const next = this.current.join('')[Math.floor(this.chars)]; speed *= next === '.' ? 0.15 : 0.45; }
     if (this.chars < this.total) {
       const before = Math.floor(this.chars);
       this.chars = Math.min(this.total, this.chars + speed * 0.5);
@@ -81,7 +91,7 @@ export class Dialog {
     let left = Math.floor(this.chars);
     this.current.forEach((line, i) => {
       if (left <= 0) return;
-      text(ctx, line.slice(0, left), 10, y + 7 + i * LINE_H, C.text);
+      text(ctx, line.slice(0, left), 10, y + 7 + i * LINE_H, this.mutter ? '#cdb8ff' : C.text);
       left -= line.length;
     });
     if (this.chars >= this.total && !this.auto && Math.floor(g.t / 16) % 2 === 0) text(ctx, '▼', W - 16, y + 33, C.gold);

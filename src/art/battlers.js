@@ -222,6 +222,135 @@ function rustclaw() {
   return p.rows();
 }
 
+/* ---------- the Whisperwood ---------- */
+function lumoth() {   // a moth that glows like a lantern
+  const p = painter(32, 32);
+  p.poly([[17, 15], [27, 2], [31, 9], [26, 17]], 'v');                                         // far wings
+  p.poly([[17, 18], [27, 27], [22, 30], [17, 22]], 'v');
+  p.poly([[15, 15], [3, 1], [0, 11], [7, 18]], 'W');                                           // near wings
+  p.poly([[15, 18], [4, 25], [9, 30], [16, 22]], 'W');
+  p.shade('W', 'w', 1, 1, 1);
+  p.ellipse(6, 9, 2.6, 2.6, 'S'); p.ellipse(6, 9, 1.1, 1.1, 'Y');                               // eye spots
+  p.ellipse(9, 25, 1.7, 1.7, 'S'); p.ellipse(27, 8, 1.7, 1.7, 'S');
+  p.ellipse(16, 20, 3.6, 7, 'F');                                                              // fuzzy body
+  p.ellipse(14, 10, 4.2, 3.8, 'F');                                                            // head
+  p.shade('F', 'f', 1, 1, 1);
+  for (const by of [19, 22, 25]) p.line(14, by, 18, by, 'f');
+  p.line(12, 7, 7, 1, 'f'); p.line(15, 7, 17, 1, 'f'); p.set(6, 1, 'Y'); p.set(17, 0, 'Y');   // feathery feelers
+  p.rect(10, 9, 2, 2, 'E'); p.set(10, 9, 'Z'); p.rect(14, 9, 2, 2, 'E'); p.set(14, 9, 'Z');      // big eyes
+  p.outline('K');
+  return p.rows();
+}
+function jadehop() {   // a frog with a jade crystal back
+  const p = painter(32, 32);
+  p.ellipse(25, 26, 5.5, 3.6, 'G'); p.rect(23, 28, 8, 2, 'G');                                 // back leg
+  p.ellipse(18, 21, 10, 6.5, 'G');                                                             // body
+  p.ellipse(10, 17, 7, 5, 'G');                                                                // head
+  p.ellipse(7, 11, 3, 3, 'G'); p.ellipse(14, 11, 3, 3, 'G');                                   // eye bumps
+  p.rect(9, 24, 3, 5, 'G'); p.rect(7, 28, 6, 2, 'G');                                          // front leg
+  p.recolour('G', 'B', (x, y) => y >= 21 && x < 22 && y < 28);                                 // pale belly
+  p.shade('G', 'g', 0, 1, 2);
+  p.poly([[17, 16], [19, 7], [22, 16]], 'C'); p.poly([[22, 17], [25, 10], [28, 18]], 'C'); p.poly([[13, 14], [15, 9], [17, 14]], 'C');
+  p.line(19, 9, 19, 14, 'l'); p.line(25, 12, 25, 16, 'l');
+  p.ellipse(7, 11, 2, 2, 'Y'); p.ellipse(14, 11, 2, 2, 'Y'); p.rect(6, 11, 2, 1, 'E'); p.rect(13, 11, 2, 1, 'E');
+  p.line(3, 19, 12, 20, 'K');                                                                  // a wide frog smile
+  p.outline('K');
+  return p.rows();
+}
+function vinesnap() {   // a snapping plant that walks on its vines
+  const p = painter(32, 32);
+  stroke(p, 18, 22, 23, 27, 27, 31, 1.4, 'V'); stroke(p, 16, 22, 12, 27, 8, 31, 1.4, 'V'); stroke(p, 17, 22, 18, 27, 17, 31, 1.2, 'V');
+  stroke(p, 17, 23, 22, 17, 17, 12, (t) => 2.3 - t * 0.6, 'V');                                // stem
+  p.poly([[19, 19], [29, 13], [24, 21]], 'L'); p.poly([[16, 21], [7, 19], [13, 24]], 'L');       // leaves
+  p.line(20, 19, 27, 14, 'l'); p.line(15, 21, 9, 20, 'l');
+  p.ellipse(12, 8, 9.5, 4.2, 'H');                                                             // upper jaw
+  p.ellipse(12, 15, 8.5, 3.6, 'H');                                                            // lower jaw
+  p.ellipse(9, 11.5, 6.5, 2.2, 'M');                                                           // the mouth, wide open
+  p.shade('H', 'h', 0, 1, 2);
+  for (const tx of [4, 7, 10, 13]) { p.set(tx, 10, 'W'); p.set(tx + 1, 13, 'W'); }               // teeth
+  for (const sx of [5, 9, 13, 17]) p.set(sx, 3, 'H');                                           // spines on the jaw
+  p.ellipse(16, 5, 2, 2, 'Y'); p.set(15, 5, 'E');                                               // eye
+  p.outline('K');
+  return p.rows();
+}
+function mosshell() {   // an old turtle with a garden on its back
+  const p = painter(32, 32);
+  p.rect(9, 24, 4, 5, 'S'); p.rect(21, 24, 4, 5, 'S'); p.rect(14, 25, 3, 4, 's'); p.rect(25, 25, 3, 4, 's');   // legs
+  p.ellipse(5, 19, 4.6, 3.6, 'S'); p.rect(7, 19, 5, 4, 'S');                                   // head and neck
+  p.ellipse(18, 18, 11, 8, 'C'); p.rect(7, 18, 22, 6, 'C');                                    // shell
+  p.rect(6, 23, 24, 2, 'c');
+  p.shade('C', 'c', 0, 1, 2);
+  p.ellipse(18, 12, 9.5, 3.6, 'M'); p.shade('M', 'm', 0, 1, 1);                                // moss
+  p.line(13, 15, 13, 22, 'c'); p.line(23, 15, 23, 22, 'c'); p.line(8, 19, 28, 19, 'c');        // plates
+  p.line(19, 9, 19, 5, 'm'); p.ellipse(19, 4, 2.4, 1.9, 'P'); p.set(19, 4, 'Y');                // a glowing flower
+  p.set(13, 10, 'P'); p.set(24, 11, 'Y'); p.set(16, 9, 'm'); p.set(22, 9, 'm');
+  p.shade('S', 's', 0, 1, 1);
+  p.rect(3, 18, 2, 2, 'E'); p.set(3, 18, 'W'); p.line(1, 21, 5, 21, 'K');                       // eye, smile
+  p.outline('K');
+  return p.rows();
+}
+function ghoul() {   // a shadow from beyond the veil
+  const p = painter(32, 32);
+  p.poly([[8, 10], [24, 8], [28, 20], [30, 31], [25, 26], [22, 31], [18, 25], [14, 31], [11, 24], [6, 29], [5, 18]], 'D');
+  p.ellipse(15, 11, 8, 7, 'D');                                                                // hood
+  p.ellipse(13, 12, 5, 4.4, 'V');                                                              // the dark inside the hood
+  p.shade('D', 'd', 0, 1, 2);
+  p.line(6, 18, 1, 15, 'D'); p.line(6, 19, 0, 19, 'D'); p.line(6, 20, 2, 23, 'D');               // reaching claws
+  for (const [cx, cy] of [[1, 15], [0, 19], [2, 23]]) p.set(cx, cy, 'C');
+  p.rect(10, 11, 2, 2, 'Y'); p.rect(15, 11, 2, 2, 'Y'); p.set(10, 11, 'W'); p.set(15, 11, 'W');   // glowing eyes
+  for (const [wx, wy] of [[27, 5], [29, 10], [4, 6], [26, 2]]) p.set(wx, wy, 'v');               // wisps
+  p.outline('K');
+  return p.rows();
+}
+function grimghoul() {   // a hulking ghoul with long grasping arms
+  const p = painter(48, 40);
+  p.poly([[14, 12], [34, 10], [40, 24], [45, 39], [37, 34], [33, 39], [28, 33], [23, 39], [19, 33], [14, 38], [12, 26]], 'D');
+  p.ellipse(24, 13, 11, 9, 'D');
+  p.poly([[16, 7], [11, 0], [19, 5]], 'H'); p.poly([[31, 6], [37, 0], [34, 9]], 'H');          // horns
+  p.ellipse(22, 14, 7.5, 5.6, 'V');
+  stroke(p, 15, 18, 7, 13, 4, 6, 2, 'D'); stroke(p, 15, 24, 8, 29, 3, 31, 2, 'D');              // arms
+  p.shade('D', 'd', 0, 1, 2);
+  for (const [cx, cy, dx, dy] of [[4, 6, -3, -3], [4, 6, 0, -5], [4, 6, -4, 1], [3, 31, -3, 2], [3, 31, -3, -1], [3, 31, 0, 4]]) p.line(cx, cy, cx + dx, cy + dy, 'C');
+  p.rect(17, 13, 3, 2, 'Y'); p.rect(24, 13, 3, 2, 'Y'); p.set(17, 13, 'W'); p.set(24, 13, 'W');
+  for (let i = 0; i < 7; i++) p.set(18 + i, 17 + (i % 2), 'Y');                                  // a jagged grin
+  p.line(30, 22, 37, 27, 'v'); p.line(20, 27, 27, 29, 'v'); p.line(33, 15, 38, 18, 'v');
+  for (const [wx, wy] of [[42, 6], [45, 12], [8, 38], [40, 2]]) p.set(wx, wy, 'v');
+  p.outline('K');
+  return p.rows();
+}
+
+/* ---------- the Shroom Groove ---------- */
+function bopjelly() {   // a sky jelly in tiny headphones
+  const p = painter(32, 32);
+  for (const [x0, cx, x1] of [[9, 6, 8], [13, 15, 12], [18, 16, 20], [22, 25, 24]]) stroke(p, x0, 17, cx, 24, x1, 31, (t) => 1.5 - t * 0.7, 'T');
+  p.ellipse(16, 12, 11, 9.5, 'B');
+  p.rect(3, 16, 26, 8, '.');                                                                   // flat underside
+  for (let x = 6; x <= 26; x += 4) p.ellipse(x, 16, 2, 1.6, 'b');                               // frilly rim
+  p.shade('B', 'b', 0, 1, 2);
+  p.ellipse(11, 7, 3, 2, 'l'); p.set(20, 6, 'l');
+  for (const [sx, sy] of [[22, 10], [8, 12], [17, 5]]) p.set(sx, sy, 'S');
+  p.rect(10, 10, 2, 3, 'E'); p.rect(16, 10, 2, 3, 'E'); p.set(10, 10, 'W'); p.set(16, 10, 'W');   // happy face
+  p.line(11, 14, 15, 14, 'E'); p.set(10, 13, 'E'); p.set(16, 13, 'E');
+  stroke(p, 5, 9, 16, -4, 27, 9, 0.7, 'H'); p.ellipse(5, 10, 2.2, 3, 'H'); p.ellipse(27, 10, 2.2, 3, 'H');   // headphones
+  p.outline('K');
+  return p.rows();
+}
+function shroomboom() {   // a mushroom drummer
+  const p = painter(32, 32);
+  p.ellipse(16, 22, 6.5, 7, 'S'); p.rect(11, 27, 4, 3, 'S'); p.rect(17, 27, 4, 3, 'S');       // stalk body and feet
+  p.ellipse(16, 10, 13.5, 7.5, 'C'); p.rect(2, 11, 28, 6, '.');                                // the cap...
+  p.rect(3, 10, 26, 4, 'R');                                                                   // ...is a drum
+  p.shade('C', 'c', 0, 1, 1);
+  for (let x = 5; x <= 26; x += 4) p.line(x, 10, x + 2, 13, 'Y');                               // drum lacing
+  for (const [sx, sy, r] of [[9, 6, 1.6], [16, 4, 2], [23, 6, 1.6]]) p.ellipse(sx, sy, r, r, 'D');
+  p.line(11, 21, 6, 17, 'S'); p.line(6, 17, 2, 11, 'W'); p.ellipse(2, 10, 1.4, 1.4, 'W');       // arms with drumsticks
+  p.line(21, 21, 26, 17, 'S'); p.line(26, 17, 29, 12, 'W'); p.ellipse(29, 11, 1.4, 1.4, 'W');
+  p.shade('S', 's', 0, 1, 1);
+  p.rect(12, 19, 2, 2, 'E'); p.rect(17, 19, 2, 2, 'E'); p.line(13, 23, 17, 23, 'E'); p.set(12, 22, 'E'); p.set(18, 22, 'E');
+  p.outline('K');
+  return p.rows();
+}
+
 const K = '#1a0f2e';
 export const BATTLERS = {
   tiger: { rows: tiger(), pal: { K: '#1d0c05', O: '#ff8a1e', D: '#c9580c', L: '#ffc46e', W: '#fff2da', E: '#7dff2e', N: '#7a2e1c' } },
@@ -236,6 +365,14 @@ export const BATTLERS = {
   thornback: { rows: thornback(), pal: { K: '#2a0808', R: '#e06030', r: '#a83a20', C: '#ffc890', S: '#ffe27a', Y: '#ffe23a', W: '#ffffff' } },
   thornAlpha: { rows: null, pal: { K: '#14040a', R: '#9a2a4a', r: '#5e1430', C: '#e8a0b0', S: '#c8f0ff', Y: '#ff4a3a', W: '#ffffff' } },
   rustclaw: { rows: rustclaw(), pal: { K: K, k: '#5a2a1a', R: '#c8602a', r: '#8a3a1a', M: '#b8bccc', m: '#7a7e94', l: '#e8ecf8', O: '#ff8a1e', o: '#fff2a0', Y: '#ffe23a', W: '#ffffff' } },
+  lumoth: { rows: lumoth(), pal: { K: '#2a1a3a', W: '#f6e8ff', w: '#c8a8f0', v: '#a080d8', S: '#7a3ad8', Y: '#fff2a0', F: '#ffe6a8', f: '#d0a868', E: K, Z: '#ffffff' } },
+  jadehop: { rows: jadehop(), pal: { K: '#062a1a', G: '#3fd890', g: '#1f9a60', B: '#c8ffd8', C: '#7dffd0', l: '#e6fff4', Y: '#ffe23a', E: K } },
+  vinesnap: { rows: vinesnap(), pal: { K: '#0a2a10', V: '#3a9a40', L: '#5fd860', l: '#a8f0a0', H: '#e8405a', h: '#a82040', M: '#ffb0c0', W: '#ffffff', Y: '#ffe23a', E: K } },
+  mosshell: { rows: mosshell(), pal: { K: '#142a14', S: '#a8d070', s: '#6a9a40', C: '#8a6a40', c: '#5a4228', M: '#3fb860', m: '#1f7a38', P: '#ff8ad8', Y: '#ffe23a', E: K, W: '#ffffff' } },
+  ghoul: { rows: ghoul(), pal: { K: '#05020a', D: '#2a1640', d: '#160a26', V: '#0a0410', C: '#c8b0ff', Y: '#b06aff', W: '#ffffff', v: '#6a3aa8' } },
+  grimghoul: { rows: grimghoul(), pal: { K: '#05020a', D: '#2a1640', d: '#160a26', V: '#0a0410', H: '#4a2a6a', C: '#c8b0ff', Y: '#c86aff', W: '#ffffff', v: '#6a3aa8' } },
+  bopjelly: { rows: bopjelly(), pal: { K: '#4a0a48', B: '#ff8ad8', b: '#d050a8', l: '#ffe0f6', T: '#ffb8ea', S: '#ffffff', E: K, W: '#ffffff', H: '#5ff2ff' } },
+  shroomboom: { rows: shroomboom(), pal: { K: '#1a0a2e', S: '#f2e6ff', s: '#c0a8e0', C: '#a050e0', c: '#6a2ab0', R: '#ffd23a', Y: '#fff2a0', D: '#5ff2ff', W: '#e8c08a', E: K } },
 };
 BATTLERS.dragonBlue.rows = BATTLERS.dragonRed.rows;
 BATTLERS.thornAlpha.rows = BATTLERS.thornback.rows;

@@ -1,11 +1,12 @@
-/* Walking sprites, 16 x 16: you (boy or girl), your companion, Enya on the Emerald Tiger, and the
-   people of Bloomhaven. One letter per pixel; each direction has a standing frame and two steps,
-   and facing left is the side frames mirrored. All original pixel art. */
+/* Walking sprites, 16 x 16: you, your companion, Enya on the Emerald Tiger, the people of Bloomhaven,
+   LUMEN the Light Keeper and the jellies of the Shroom Groove. One letter per pixel; each direction
+   has a standing frame and two steps, and facing left is the side frames mirrored. All original
+   pixel art. */
 import { art, remap } from '../engine/pixel.js';
 
 export const INK = '#1a0f2e';
 
-/* ---------- you ----------
+/* ---------- you: a castaway from a long line of warriors ----------
    K outline, H hair, h hair shine, S skin, s skin shade, E eyes, T flight suit, t suit shade,
    W white stripe, O scarf, G goggle frame, g goggle lens, P backpack, p pack shade, B boots */
 const BOY_DOWN_TOP = art(`
@@ -64,62 +65,16 @@ const legsSide = [
 ];
 function build(top, legs) { return legs.map((l) => top.concat(l)); }
 
-/* the girl: longer hair down past her shoulders, and a ponytail */
-const GIRL_DOWN_TOP = art(`
-  ................
-  .....KKKKKK.....
-  ....KHHHHHHK....
-  ...KHhHHHHHHK...
-  ...KGggGGggGK...
-  ..KHHSSSSSSHHK..
-  ..KHSESSSSESHK..
-  ..KHKSSssSSKHK..
-  ..KHKOOOOOOKHK..
-  ..KTKTTWWTTKTK..
-  ..KTKTTWWTTKTK..
-`);
-const GIRL_UP_TOP = art(`
-  ................
-  .....KKKKKK.....
-  ....KHHHHHHK....
-  ...KHHHHhHHHK...
-  ...KGGGGGGGGK...
-  ..KHHHHHHHHHHK..
-  ..KHHHHHHHHHHK..
-  ..KHHHHhhHHHHK..
-  ..KHKHHHHHHKHK..
-  ..KTKPHHHHPKTK..
-  ..KTKPpHHpPKTK..
-`);
-const GIRL_SIDE_TOP = art(`
-  ................
-  .....KKKKK......
-  ...KKHHHHHKK....
-  ..KHHHHhHHHHK...
-  ..KHHHHHHGggK...
-  .KHHHHHHSSSSK...
-  .KHKHHHSSSESK...
-  ..KHKHSSSSSSK...
-  ..KHKKKOOOOK....
-  ...KKPKTTWTK....
-  ....KPKTTWTK....
-`);
-
-export const KID = {
-  boy: { down: build(BOY_DOWN_TOP, legsDown), up: build(BOY_UP_TOP, legsUp), side: build(BOY_SIDE_TOP, legsSide) },
-  girl: { down: build(GIRL_DOWN_TOP, legsDown), up: build(GIRL_UP_TOP, legsUp), side: build(GIRL_SIDE_TOP, legsSide) },
-};
+export const HERO = { down: build(BOY_DOWN_TOP, legsDown), up: build(BOY_UP_TOP, legsUp), side: build(BOY_SIDE_TOP, legsSide) };
 /* riding: just the top half, sat on the companion's back */
-export const KID_TOP = {
-  boy: { down: BOY_DOWN_TOP.slice(0, 10).concat(['..KTKTTWWTTKTK..']), up: BOY_UP_TOP.slice(0, 11), side: BOY_SIDE_TOP.slice(0, 11) },
-  girl: { down: GIRL_DOWN_TOP.slice(0, 11), up: GIRL_UP_TOP.slice(0, 11), side: GIRL_SIDE_TOP.slice(0, 11) },
-};
+export const HERO_TOP = { down: BOY_DOWN_TOP.slice(0, 10).concat(['..KTKTTWWTTKTK..']), up: BOY_UP_TOP.slice(0, 11), side: BOY_SIDE_TOP.slice(0, 11) };
 
-const SUIT = { K: INK, S: '#ffd0a6', s: '#e09a6a', E: INK, T: '#2fc6b4', t: '#1b8f8c', W: '#f6f2ff', O: '#ff8a1e', G: '#ffd23a', g: '#8ff0ff', P: '#c8702a', p: '#8a4418', B: '#5a2f6e' };
-export const KID_PAL = {
-  boy: { ...SUIT, H: '#4a2c1c', h: '#7a4a2c' },
-  girl: { ...SUIT, H: '#c2502a', h: '#f08a4a' },
-};
+/* his eyes are violet, and they change: now and then a flicker of green comes through, and when his
+   warrior blood is up they blaze green */
+const SUIT = { K: INK, S: '#ffd0a6', s: '#e09a6a', T: '#2fc6b4', t: '#1b8f8c', W: '#f6f2ff', O: '#ff8a1e', G: '#ffd23a', g: '#8ff0ff', P: '#c8702a', p: '#8a4418', B: '#5a2f6e', H: '#4a2c1c', h: '#7a4a2c' };
+export const HERO_PAL = { ...SUIT, E: '#8a44f0' };
+export const HERO_PAL_SHIFT = { ...SUIT, E: '#2fd8a0' };
+export const HERO_PAL_FURY = { ...SUIT, E: '#5dff3a' };
 
 /* ---------- NOVA, the tiger ----------
    Ryan's own pixel tiger from the site (tiger.js), frame for frame.
@@ -446,6 +401,58 @@ const DRONE = art(`
 `);
 export const DRONE_FR = { down: [DRONE, DRONE, DRONE], up: [DRONE, DRONE, DRONE], side: [DRONE, DRONE, DRONE] };
 export const DRONE_PAL = { K: INK, M: '#a59fc4', m: '#6e6690', R: '#ff3b4a', r: '#ffc0c0', w: '#d8f4ff', s: '#00000040' };
+
+/* LUMEN, the Light Keeper of the Whisperwood: a big soft moth with glowing feelers.
+   K outline, W wings, s wing spots, F fuzz, c fuzz stripes, E eyes, A glowing feeler tips */
+export const LUMEN = art(`
+  ..A..........A..
+  ...K........K...
+  ....K......K....
+  .KKK.KKKKKK.KKK.
+  KWWWKFFFFFFKWWWK
+  KWsWKFEFFEFKWsWK
+  KWWWKFFFFFFKWWWK
+  KWsWWKFFFFKWWsWK
+  .KWWWKccccKWWWK.
+  ..KWWKFFFFKWWK..
+  ...KKKccccKKK...
+  .....KFFFFK.....
+  .....KccccK.....
+  ......KFFK......
+  .......KK.......
+  ................
+`);
+export const LUMEN_PAL = { K: '#2a1a3a', W: '#f2e6ff', s: '#9a5ae0', F: '#ffe8b0', c: '#e0b870', E: INK, A: '#fff2a0' };
+
+/* the jellies of the Shroom Groove: floating jellyfish folk who live for the beat.
+   K outline, B bell, b rim, l shine, W eye white, E pupil, M mouth, T tentacles; DJ JIGGLE wears shades (G, g) */
+const JELLY_TOP = art(`
+  ................
+  .....KKKKKK.....
+  ...KKBBBBBBKK...
+  ..KBBllBBBBBBK..
+  ..KBlBBBBBBBBK..
+  .KBBBBBBBBBBBBK.
+  .KBBWEBBBBWEBBK.
+  .KBBWEBBBBWEBBK.
+  .KBBBBBMMBBBBBK.
+  .KbbBBBBBBBBbbK.
+  ..KbKbbKKbbKbK..
+`);
+const TENTS = [
+  ['...T..T..T..T...', '...T..T..T..T...', '..T..T....T..T..', '..T...T..T...T..', '...T...TT...T...'],
+  ['...T..T..T..T...', '..T...T..T...T..', '..T..T....T..T..', '...T..T..T..T...', '....T.T..T.T....'],
+];
+export const JELLY = TENTS.map((t) => JELLY_TOP.concat(t));
+export const JELLY_DJ = JELLY.map((f) => f.map((r, i) => (i === 6 ? '.KBKKKKKKKKKKBK.' : i === 7 ? '.KBKgGKBBKgGKBK.' : r)));
+const JELLY_BASE = { W: '#ffffff', E: INK, G: INK, g: '#8ff0ff' };
+export const JELLY_PALS = {
+  pink: { ...JELLY_BASE, K: '#6a1458', B: '#ff8ad8', b: '#d050a8', l: '#ffe0f6', M: '#6a1458', T: '#ffb8ea' },
+  cyan: { ...JELLY_BASE, K: '#0a3a58', B: '#6ae8ff', b: '#2aa8d8', l: '#e0fbff', M: '#0a3a58', T: '#a8f4ff' },
+  violet: { ...JELLY_BASE, K: '#2a1060', B: '#b48cff', b: '#7a50d8', l: '#f0e6ff', M: '#2a1060', T: '#d8c4ff' },
+  gold: { ...JELLY_BASE, K: '#5a3a06', B: '#ffd25a', b: '#d89a2a', l: '#fff6c8', M: '#5a3a06', T: '#ffe8a0' },
+  mint: { ...JELLY_BASE, K: '#0a4a30', B: '#7fe0b0', b: '#3fa880', l: '#e0fff0', M: '#0a4a30', T: '#b8f4d8' },
+};
 
 /* the companions, by species, for walking behind you (or carrying you) */
 export const COMPANION_ART = {

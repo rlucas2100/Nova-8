@@ -170,6 +170,11 @@
 /* the speaker */
 .n8-speaker { position: absolute; right: 26px; bottom: 22px; display: flex; gap: 7px; transform: rotate(-28deg); }
 .n8-speaker i { width: 7px; height: 44px; border-radius: 4px; background: rgba(0, 0, 0, 0.3); box-shadow: inset 0 3px 3px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.2); }
+/* in the Shroom Groove the speaker grille pumps and glows along to the beat (--beat runs 1 to 0) */
+.n8.is-grooving .n8-speaker i {
+  transform: scaleY(calc(1 + var(--beat, 0) * 0.16));
+  box-shadow: inset 0 3px 3px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 calc(var(--beat, 0) * 10px) rgba(255, 120, 220, calc(var(--beat, 0) * 0.9));
+}
 
 /* ---------- shells ---------- */
 .n8[data-skin="tiger"] {
@@ -261,6 +266,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .n8-glow, .n8::after, .n8.is-on .n8-glow, .n8[data-skin="lumi"] .n8-shell, .n8-play { animation: none; }
+  .n8.is-grooving .n8-speaker i { transform: none; }
 }
 @media print { .n8-tools { display: none; } }
 

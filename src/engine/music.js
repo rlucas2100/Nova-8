@@ -211,6 +211,100 @@ export const SONGS = {
     ],
   },
 
+  /* The Whisperwood: mysterious, with tom-tom drums. Am  G  F  E */
+  jungle: {
+    bpm: 100,
+    tracks: [
+      { wave: 'p0.125', vol: 0.14, vib: true, notes:
+        'A4 - C5 - D5 - E5 - | G5 - E5 - D5 - C5 D5 | E5 - - - A4 - - - | . . C5 D5 E5 - G5 - | ' +
+        'A5 - G5 - E5 - D5 - | C5 - D5 - E5 - G5 - | A5 - - - G5 E5 D5 C5 | D5 - - - - - . . ' },
+      { wave: 'p0.25', vol: 0.04, notes: 'A3 E4 A4 E4 C4 E4 A4 E4 | G3 D4 G4 D4 B3 D4 G4 D4 | F3 C4 F4 C4 A3 C4 F4 C4 | E3 B3 E4 B3 G#3 B3 E4 B3 ' },
+      { wave: 'triangle', vol: 0.3, notes: 'A2 - . A2 . . A2 . | G2 - . G2 . . G2 . | F2 - . F2 . . F2 . | E2 - . E2 . . E2 B1 ' },
+      { drums: 'k..k..s.k.k.s..h', vol: 0.15 },
+    ],
+  },
+
+  /* The Whisperwood, second tune: following the stream. Dm  C  F  A ... */
+  jungle2: {
+    bpm: 108,
+    tracks: [
+      { wave: 'p0.25', vol: 0.13, vib: true, notes:
+        'D5 - F5 - A5 - G5 F5 | E5 - C5 - D5 - - - | F5 - A5 - C6 - A5 G5 | A5 - - - - - . . | ' +
+        'Bb5 - A5 - G5 - F5 - | G5 - F5 - E5 - C5 - | D5 - E5 - F5 - E5 C5 | D5 - - - - - . . ' },
+      { wave: 'p0.125', vol: 0.045, notes:
+        'D4 A4 D5 A4 D4 A4 D5 A4 | C4 G4 C5 G4 C4 G4 C5 G4 | F4 C5 F5 C5 F4 C5 F5 C5 | A3 E4 A4 E4 A3 E4 A4 E4 | ' +
+        'Bb3 F4 Bb4 F4 Bb3 F4 Bb4 F4 | C4 G4 C5 G4 C4 G4 C5 G4 | D4 A4 D5 A4 D4 A4 D5 A4 | D4 A4 D5 A4 D4 A4 D5 A4 ' },
+      { wave: 'triangle', vol: 0.3, notes:
+        'D2 - D3 - D2 - D3 - | C2 - C3 - C2 - C3 - | F2 - F3 - F2 - F3 - | A1 - A2 - A1 - A2 - | ' +
+        'Bb1 - Bb2 - Bb1 - Bb2 - | C2 - C3 - C2 - C3 - | D2 - D3 - D2 - D3 - | D2 - D3 - D2 - A1 - ' },
+      { drums: 'k.h.s.hkk.h.s.hh', vol: 0.13 },
+    ],
+  },
+
+  /* The Shroom Groove: a funk jam in sixteenths. The bass guitar (a plucked pulse over the triangle)
+     bops along under offbeat chord stabs. Em7  Em7  A7  B7 */
+  groove: {
+    bpm: 104, div: 4,
+    tracks: [
+      { wave: 'p0.25', vol: 0.13, vib: true, notes:
+        '. . E5 . G5 . E5 . D5 . B4 . . . . . | . . E5 . G5 . A5 . B5 . A5 . G5 . E5 . | ' +
+        '. . C#5 . E5 . C#5 . B4 . A4 . . . . . | D#5 - - . F#5 - - . A5 - - . B5 - - - | ' +
+        'E6 - . . D6 . B5 . . . A5 . B5 - . . | G5 . A5 . B5 - . . D6 . B5 . A5 . G5 . | ' +
+        'A5 - . . C#6 - . . E6 . C#6 . A5 - . . | B5 . A5 . F#5 . D#5 . B4 - - - . . . . ' },
+      { wave: 'p0.125', vol: 0.05, sus: 0.3, notes:
+        '. . B4 . . . G4 . . . B4 . . . D5 . | . . B4 . . . G4 . . . B4 . . . D5 . | ' +
+        '. . C#5 . . . A4 . . . C#5 . . . E5 . | . . D#5 . . . B4 . . . D#5 . . . F#5 . ' },
+      { wave: 'triangle', vol: 0.34, notes:
+        'E2 . E3 . . . E2 . . E2 G2 . A2 . B2 . | E2 . E3 . . . E2 . D3 . B2 . G2 . A2 . | ' +
+        'A1 . A2 . . . A1 . . A1 C#2 . E2 . G2 . | B1 . B2 . . . B1 . D#2 . F#2 . A2 . B2 . ' },
+      { wave: 'p0.25', vol: 0.07, oct: 1, sus: 0.22, gate: 0.7, notes:
+        'E2 . E3 . . . E2 . . E2 G2 . A2 . B2 . | E2 . E3 . . . E2 . D3 . B2 . G2 . A2 . | ' +
+        'A1 . A2 . . . A1 . . A1 C#2 . E2 . G2 . | B1 . B2 . . . B1 . D#2 . F#2 . A2 . B2 . ' },
+      { drums: 'k.hhs.hkk.hhs.oh | k.hhs.hkk.hhs.oh | k.hhs.hkk.hhs.oh | k.hhs.hkk.ssk.sc', vol: 0.2 },
+    ],
+  },
+
+  /* The Shroom Groove, second tune: the jellies' jam, with a slap-bass breakdown. Em  Bm  C  B */
+  groove2: {
+    bpm: 104, div: 4,
+    tracks: [
+      { wave: 'p0.25', vol: 0.13, vib: true, notes:
+        'B5 - . . . . G5 . E5 - . . . . . . | F#5 - . . D5 . . . B4 . D5 . F#5 - . . | ' +
+        'G5 - . . E5 . . . C5 . E5 . G5 . C6 . | B5 - - - A5 . . . F#5 . . . D#5 . . . ' },
+      { wave: 'p0.125', vol: 0.05, sus: 0.3, notes:
+        '. . G4 . . . B4 . . . G4 . . . B4 . | . . F#4 . . . D5 . . . B4 . . . F#4 . | ' +
+        '. . G4 . . . C5 . . . E5 . . . C5 . | . . D#5 . . . F#5 . . . B4 . . . D#5 . ' },
+      { wave: 'triangle', vol: 0.34, notes:
+        'E2 E3 . E2 . E3 E2 . G2 . G3 . A2 . A3 . | B2 . B1 . D3 . B2 . A2 . G2 . E2 . D2 . | ' +
+        'C2 C3 . C2 . C3 C2 . D2 . D3 . E2 . E3 . | B1 . . B2 . . B1 . D#2 . F#2 . B2 . D#3 . ' },
+      { wave: 'p0.25', vol: 0.075, oct: 1, sus: 0.2, gate: 0.6, notes:
+        'E2 E3 . E2 . E3 E2 . G2 . G3 . A2 . A3 . | B2 . B1 . D3 . B2 . A2 . G2 . E2 . D2 . | ' +
+        'C2 C3 . C2 . C3 C2 . D2 . D3 . E2 . E3 . | B1 . . B2 . . B1 . D#2 . F#2 . B2 . D#3 . ' },
+      { drums: 'k.h.s.hkk.h.skoh | k.h.s.hkk.h.skoh | k.h.s.hkk.h.skoh | k.h.s.hkk.ssk.sc', vol: 0.2 },
+    ],
+  },
+
+  /* Beyond the veil: visions of the other side. Fmaj7  Dm7  Bbmaj7  Cmaj7 */
+  vision: {
+    bpm: 66,
+    tracks: [
+      { wave: 'p0.125', vol: 0.12, vib: true, notes: 'C6 - - - B5 - G5 - | A5 - - - - - E5 - | F5 - G5 - A5 - C6 - | B5 - - - - - . . ' },
+      { wave: 'p0.5', vol: 0.035, notes: 'F4 A4 C5 E5 F4 A4 C5 E5 | D4 F4 A4 C5 D4 F4 A4 C5 | Bb3 D4 F4 A4 Bb3 D4 F4 A4 | C4 E4 G4 B4 C4 E4 G4 B4 ' },
+      { wave: 'triangle', vol: 0.26, notes: 'F2 - - - - - - - | D2 - - - - - - - | Bb1 - - - - - - - | C2 - - - - - - - ' },
+    ],
+  },
+
+  /* Ghouls from beyond the veil: eerie and driving. C#m  A  F#m  G#(b5) */
+  ghoul: {
+    bpm: 132,
+    tracks: [
+      { wave: 'p0.5', vol: 0.11, notes: 'C#5 - D5 - C#5 - G#4 - | A4 - G#4 - F#4 - E4 - | C#5 - E5 - G#5 - A5 - | G#5 - - - D5 - - - ' },
+      { wave: 'p0.125', vol: 0.05, notes: 'C#4 G#4 C#5 G#4 C#4 G#4 C#5 G#4 | A3 E4 A4 E4 A3 E4 A4 E4 | F#3 C#4 F#4 C#4 F#3 C#4 F#4 C#4 | G#3 D4 G#4 D4 G#3 D4 G#4 D4 ' },
+      { wave: 'triangle', vol: 0.32, notes: 'C#2 C#2 C#3 C#2 C#2 C#2 D2 C#2 | A1 A1 A2 A1 A1 A1 B1 A1 | F#1 F#1 F#2 F#1 F#1 F#1 G#1 F#1 | G#1 G#1 G#2 G#1 D2 D2 D3 D2 ' },
+      { drums: 'k.sk.ksk.sk.kss.', vol: 0.19 },
+    ],
+  },
+
   /* Mossa's shop */
   shop: {
     bpm: 112,
@@ -227,6 +321,8 @@ export const SONGS = {
 export const PLAYLISTS = {
   'pl:town': ['town', 'town2'],
   'pl:wilds': ['wilds', 'wilds2'],
+  'pl:jungle': ['jungle', 'jungle2'],
+  'pl:groove': ['groove', 'groove2'],
 };
 
 /* short fanfares played over the music */
@@ -255,6 +351,24 @@ export const JINGLES = {
       { wave: 'triangle', vol: 0.28, notes: 'C3 - - E3 - G2 - C3 - - - - ' },
     ],
   },
+  /* a memory comes back */
+  memory: {
+    bpm: 132,
+    tracks: [
+      { wave: 'p0.125', vol: 0.17, notes: 'B4 E5 G#5 B5 E6 - - - | G#6 - - - . . . . ' },
+      { wave: 'p0.25', vol: 0.06, notes: 'G#4 B4 E5 G#5 B5 - - - | E6 - - - . . . . ' },
+      { wave: 'triangle', vol: 0.24, notes: 'E3 - - - B2 - - - | E3 - - - . . . . ' },
+    ],
+  },
+  /* a creature held in a COSMIC TUBE */
+  captured: {
+    bpm: 168,
+    tracks: [
+      { wave: 'p0.25', vol: 0.2, notes: 'C5 E5 G5 C6 E6 G6 - - | C7 - - - . . . . ' },
+      { wave: 'p0.125', vol: 0.09, notes: 'G4 C5 E5 G5 C6 E6 - - | G6 - - - . . . . ' },
+      { wave: 'triangle', vol: 0.3, notes: 'C3 - - - G2 - - - | C3 - - - . . . . ' },
+    ],
+  },
 };
 
 /* names for the soundboard and the sound test */
@@ -270,8 +384,14 @@ export const TRACKS = [
   ['ride', 'Ride on!'],
   ['enya', "Enya's jig"],
   ['nest', 'The scrap nest'],
+  ['jungle', 'The Whisperwood'],
+  ['jungle2', 'Whisperwood stream'],
+  ['groove', 'Shroom Groove'],
+  ['groove2', 'Jelly jam'],
+  ['vision', 'Beyond the veil'],
   ['battle', 'Wild battle'],
   ['battle2', 'Wild battle II'],
+  ['ghoul', 'Ghouls!'],
   ['boss', 'Rustclaw'],
   ['victory', 'Victory!'],
   ['chapter', 'Chapter complete'],

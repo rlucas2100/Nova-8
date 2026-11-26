@@ -145,6 +145,11 @@ const VOICES = {   // the little blips each speaker's words make
   enya: { wave: 'triangle', f: 620, spread: 0.18, vol: 0.12, len: 0.035 },
   low: { wave: 'p0.25', f: 330, spread: 0.1, vol: 0.06, len: 0.04 },
   kid: { wave: 'p0.5', f: 990, spread: 0.15, vol: 0.05, len: 0.025 },
+  hero: { wave: 'p0.25', f: 400, spread: 0.08, vol: 0.055, len: 0.04 },
+  mutter: { wave: 'triangle', f: 300, spread: 0.12, vol: 0.1, len: 0.05 },
+  jelly: { wave: 'sine', f: 760, spread: 0.35, vol: 0.13, len: 0.05 },
+  lumen: { wave: 'triangle', f: 540, spread: 0.1, vol: 0.12, len: 0.045 },
+  dj: { wave: 'p0.5', f: 520, spread: 0.4, vol: 0.05, len: 0.03, step: true },
 };
 export const sfx = {
   blip() { if (!ac) return; tone('p0.25', NOTE('A5'), now(), 0.05, 0.18); },
@@ -218,9 +223,65 @@ export const sfx = {
       case 'crystabug': for (let i = 0; i < 3; i++) noise(t + i * 0.06, 0.04, 0.3, { freq: 4000, q: 4, metal: true }); tone('p0.125', 2200, t + 0.2, 0.12, 0.08); break;
       case 'thornback': case 'thornAlpha': noise(t, 0.5, 0.45, { freq: 400, to: 200, q: 2, metal: true }); tone('p0.5', 150, t, 0.45, 0.2, { to: 100, vib: true }); break;
       case 'rustclaw': for (let i = 0; i < 4; i++) noise(t + i * 0.09, 0.06, 0.4, { freq: 2500, q: 3, metal: true }); tone('triangle', 80, t, 0.6, 0.45, { to: 50 }); break;
+      case 'lumoth': for (let i = 0; i < 6; i++) noise(t + i * 0.05, 0.04, 0.12, { freq: 1200 + i * 200, q: 2 }); tone('sine', 1200, t + 0.1, 0.3, 0.1, { to: 1600, vib: true }); break;
+      case 'jadehop': tone('p0.5', 220, t, 0.08, 0.2, { to: 160 }); tone('p0.5', 240, t + 0.14, 0.12, 0.2, { to: 150 }); break;   // ribbit
+      case 'vinesnap': for (let i = 0; i < 2; i++) { noise(t + i * 0.12, 0.05, 0.4, { freq: 3000, q: 3, metal: true }); tone('triangle', 200, t + i * 0.12, 0.06, 0.3, { to: 90 }); } break;
+      case 'mosshell': tone('triangle', 110, t, 0.5, 0.4, { to: 90, vib: true, vibRate: 4 }); break;
+      case 'ghoul': case 'grimghoul':
+        tone('sine', species === 'ghoul' ? 620 : 380, t, 0.9, 0.22, { to: species === 'ghoul' ? 210 : 120, vib: true, vibRate: 7, vibDepth: 0.08, vibDelay: 0 });
+        noise(t, 0.8, 0.16, { freq: 6000, type: 'highpass' });
+        if (species === 'grimghoul') tone('p0.5', 70, t, 0.8, 0.25, { to: 45 });
+        break;
+      case 'bopjelly': for (let i = 0; i < 3; i++) tone('sine', 400 + i * 200, t + i * 0.08, 0.1, 0.25, { to: 700 + i * 200, slide: 0.08 }); break;
+      case 'shroomboom': sfx.drum(); tone('triangle', 90, t + 0.25, 0.3, 0.45, { to: 40 }); break;
       default: sfx.wiggle();
     }
   },
+  /* NOVA purrs (and hearts float up) */
+  purr() {
+    if (!ac) return;
+    const t = now();
+    noise(t, 0.7, 0.16, { freq: 240, q: 2.5, metal: true });
+    tone('triangle', 92, t, 0.7, 0.2, { vib: true, vibRate: 26, vibDepth: 0.08, vibDelay: 0 });
+  },
+  /* a big wet lick: tiger saliva heals */
+  lick() {
+    if (!ac) return;
+    const t = now();
+    tone('sine', 320, t, 0.2, 0.26, { to: 950, slide: 0.16, vib: true, vibRate: 30, vibDepth: 0.05, vibDelay: 0 });
+    noise(t + 0.05, 0.14, 0.12, { freq: 2600, q: 1.5 });
+    tone('sine', 700, t + 0.22, 0.08, 0.12, { to: 1100 });
+  },
+  heartbeat() { if (!ac) return; const t = now(); tone('triangle', 72, t, 0.13, 0.5, { to: 40 }); tone('triangle', 72, t + 0.2, 0.12, 0.38, { to: 40 }); },
+  /* his warrior blood boils: a rising roar */
+  fury() {
+    if (!ac) return;
+    const t = now();
+    sfx.heartbeat();
+    tone('p0.5', 110, t + 0.35, 0.8, 0.2, { to: 440, slide: 0.7, vib: true, vibRate: 12, vibDepth: 0.04 });
+    noise(t + 0.35, 0.9, 0.42, { freq: 300, to: 2400, q: 1, metal: true });
+    tone('triangle', 55, t + 0.35, 0.9, 0.45, { to: 110 });
+  },
+  /* the GEM's light shattering like a diamond */
+  shatter() {
+    if (!ac) return;
+    const t = now();
+    for (let i = 0; i < 9; i++) tone('p0.125', 3200 - i * 240 + Math.random() * 300, t + i * 0.022, 0.07, 0.12);
+    noise(t, 0.6, 0.35, { freq: 7000, type: 'highpass' });
+    ['E7', 'B6', 'G#6'].forEach((n, i) => tone('sine', NOTE(n), t + 0.12 + i * 0.07, 0.3, 0.06));
+  },
+  /* the air tearing open between worlds */
+  rift() { if (!ac) return; const t = now(); noise(t, 0.7, 0.35, { freq: 200, to: 5000, q: 1.2 }); tone('p0.25', 900, t, 0.7, 0.12, { to: 120 }); tone('sine', 1400, t + 0.2, 0.5, 0.06, { to: 2400, vib: true }); },
+  /* a COSMIC TUBE opening, its beam of light pulling a creature in */
+  tube() { if (!ac) return; const t = now(); tone('p0.25', 300, t, 0.55, 0.18, { to: 1800 }); seq([null, null, null, 'C6', 'G6', 'C7'], 'p0.125', 0.06, 0.12); },
+  wobble() { if (!ac) return; const t = now(); tone('p0.125', 900, t, 0.05, 0.16); noise(t, 0.04, 0.18, { freq: 3000, q: 3, metal: true }); tone('triangle', 160, t + 0.05, 0.08, 0.25, { to: 90 }); },
+  breakfree() { if (!ac) return; const t = now(); tone('p0.5', 600, t, 0.22, 0.2, { to: 150 }); noise(t, 0.25, 0.3, { freq: 5000, type: 'highpass' }); },
+  memory() { jingle('memory'); },
+  captured() { jingle('captured'); },
+  /* DJ JIGGLE's record scratch, and the BASS DROP */
+  scratch() { if (!ac) return; const t = now(); noise(t, 0.12, 0.45, { freq: 700, to: 3200, q: 3 }); noise(t + 0.12, 0.14, 0.45, { freq: 3200, to: 500, q: 3 }); noise(t + 0.28, 0.08, 0.3, { freq: 900, to: 2400, q: 3 }); },
+  boom() { if (!ac) return; const t = now(); tone('triangle', 110, t, 0.7, 0.6, { to: 32 }); noise(t, 0.5, 0.35, { freq: 300, type: 'lowpass' }); tone('p0.5', 55, t, 0.4, 0.14, { to: 30 }); },
+  drum() { if (!ac) return; const t = now(); for (let i = 0; i < 4; i++) noise(t + i * 0.06, 0.06, 0.32, { freq: 2200 - i * 150, q: 0.8 }); },
   rustle() { if (!ac) return; noise(now(), 0.07, 0.07, { freq: 3500, q: 0.7 }); },
   heal() { seq(['C5', 'E5', 'G5', 'B5', 'D6', 'G6'], 'p0.125', 0.07, 0.18); },
   save() { seq(['G5', 'C6', 'E6'], 'p0.25', 0.07, 0.2); },
@@ -289,7 +350,7 @@ function compile(def) {
       while (toks[i + n] === '-') n++;
       ev[i] = { f: NOTE(tk) * (ch.oct ? Math.pow(2, ch.oct) : 1), n };
     }
-    chans.push({ ev, wave: ch.wave || 'p0.25', vol: ch.vol ?? 0.2, vib: !!ch.vib, gate: ch.gate ?? 0.9 });
+    chans.push({ ev, wave: ch.wave || 'p0.25', vol: ch.vol ?? 0.2, vib: !!ch.vib, gate: ch.gate ?? 0.9, sus: ch.sus });
     len = Math.max(len, toks.length);
   }
   return { stepDur, chans, len, loop: def.loop !== false, loopAt: def.loopAt || 0 };
@@ -307,7 +368,8 @@ function playStep(song, s, t, bus) {
       continue;
     }
     const e = c.ev[s % c.ev.length];
-    if (e) tone(c.wave, e.f, t, song.stepDur * e.n * c.gate, c.vol, { bus, vib: c.vib && e.n > 2, release: 0.03 });
+    // sus: how far a note falls after its attack (low = plucked, like a bass guitar string)
+    if (e) tone(c.wave, e.f, t, song.stepDur * e.n * c.gate, c.vol, { bus, vib: c.vib && e.n > 2, release: 0.03, sustain: c.sus });
   }
 }
 
@@ -390,6 +452,14 @@ export function boardStop() { boardWant = null; apply(); changed(); }
 export function nowPlaying() {
   if (!cur) return null;
   return { name: cur.name, track: cur.list[cur.li], owner: cur.owner };
+}
+/* where the music is right now, in beats (a fraction runs between them), so things can bop along:
+   the step being heard is a little behind the one being scheduled */
+export function musicBeat() {
+  if (!cur || !ac) return null;
+  const def = SONGS[cur.list[cur.li]];
+  const step = cur.step - (cur.nextTime - ac.currentTime) / cur.song.stepDur;
+  return { beat: step / (def.div || 2), bpm: def.bpm, track: cur.list[cur.li] };
 }
 
 /* a jingle over the music, which ducks while it plays */

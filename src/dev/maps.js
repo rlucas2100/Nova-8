@@ -31,6 +31,8 @@ if (q.get('m') === 'battle') {
     if (n.big) { const b = BATTLERS[n.art === 'thornback' ? 'thornAlpha' : n.art]; im = spr(b.rows, b.pal); g.drawImage(im, (n.x * 16 + 16 - im.width / 2) * S, ((n.y + 1) * 16 - im.height) * S, im.width * S, im.height * S); continue; }
     if (n.art === 'sprig') im = spr(C.SPRIG.down[0], C.SPRIG_PAL);
     else if (n.art === 'drone') im = spr(C.DRONE_FR.down[0], C.DRONE_PAL);
+    else if (n.art === 'lumen') im = spr(C.LUMEN, C.LUMEN_PAL);
+    else if (n.art === 'jelly') im = spr((n.dj ? C.JELLY_DJ : C.JELLY)[0], C.JELLY_PALS[n.pal]);
     else im = spr(C.BLOOM.down[0], C.BLOOM_PALS[n.pal]);
     g.drawImage(im, n.x * 16 * S, (n.y * 16 - 4) * S, 16 * S, 16 * S);
   }
@@ -40,6 +42,6 @@ if (q.get('m') === 'battle') {
   const solid = (x, y) => (TILE[map.rows[y][x]] || {}).solid;
   const taken = new Map();
   for (const pr of map.props) { const d = props[pr.t]; for (let j = 0; j < d.h; j++) for (let i = 0; i < d.w; i++) { const k = (pr.x + i) + ',' + (pr.y + j); if (solid(pr.x + i, pr.y + j)) console.error('prop on solid', pr.t, k); if (taken.has(k)) console.error('overlap', pr.t, taken.get(k), k); taken.set(k, pr.t); } }
-  for (const n of map.npcs) { const k = n.x + ',' + n.y; if (solid(n.x, n.y)) console.error('npc on solid', n.id); if (taken.has(k)) console.error('npc on prop', n.id, taken.get(k)); }
+  for (const n of map.npcs) { const k = n.x + ',' + n.y; if (solid(n.x, n.y) && !(n.hover && (TILE[map.rows[n.y][n.x]] || {}).void)) console.error('npc on solid', n.id); if (taken.has(k)) console.error('npc on prop', n.id, taken.get(k)); }
   for (const j of map.jewels || []) { const k = j.x + ',' + j.y; if (solid(j.x, j.y)) console.error('jewel on solid', j.id, k); if (taken.has(k)) console.error('jewel on prop', j.id, taken.get(k)); }
 }

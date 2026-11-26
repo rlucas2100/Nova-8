@@ -1,49 +1,71 @@
-/* Battles: your companion (and Enya, once she's with you) against a wild creature of the Crimson
-   Wilds. Turn by turn: pick a move (moves cost EN, which refills a little each turn), use an item,
-   guard, or run. Enya acts on her own after you: she heals, attacks with the Emerald Tiger, or uses
-   her Diamond Flash to daze the foe. */
-import { W, H, spr, makeCanvas, hash, painter } from '../engine/pixel.js';
+/* Battles: your companion (and Enya's echo, once she reaches you) against a wild creature. Turn by turn:
+   pick a move (moves cost EN, which refills a little each turn), use an item, guard, or run. Enya acts
+   on her own after you: she heals, attacks with the Emerald Tiger, or flashes the GEM to daze the foe.
+   Your FURY builds as your companion gets hurt; when it's full your eyes blaze green and your warrior
+   blood strikes. A COSMIC TUBE from the bag captures a weakened creature in an infinity of light. */
+import { W, H, spr, makeCanvas, hash, mix, disc } from '../engine/pixel.js';
 import { text, measure, wrap } from '../engine/font.js';
 import { box, bar, hpColour, C } from './ui.js';
 import { sfx, playMusic } from '../engine/audio.js';
 import { BATTLERS } from '../art/battlers.js';
 import { buildProps } from '../art/tiles.js';
-import { MOVES, WILD, ITEMS, JEWELS, companionStats, companionArt, xpToNext, learnsAt, MAX_EN } from './data.js';
+import { MOVES, WILD, ITEMS, JEWELS, companionStats, companionArt, xpToNext, learnsAt, MAX_EN, enyaWith } from './data.js';
+import { remember } from './memory.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const STAGE = { '-2': 0.6, '-1': 0.78, 0: 1, 1: 1.3, 2: 1.6 };
 const ACC_STAGE = { '-2': 0.62, '-1': 0.8, 0: 1, 1: 1.1, 2: 1.2 };
 const STAT_NAME = { atk: 'attack', def: 'defence', acc: 'accuracy', spd: 'speed' };
-let BG = null, PLANET = null;
+const GREEN = '#5dff3a', VIOLET = '#8a44f0';
+let PLANET = null;
 
-function background(boss) {
-  const c = makeCanvas(W, 96), g = c.getContext('2d');
-  const sky = boss ? ['#1a0820', '#2a0e30', '#3e1638', '#5a1e40'] : ['#1c0c3a', '#2e1660', '#4a2a8a', '#6a40c0'];
+/* where you fight: the sky, the shapes on the horizon, the ground and what grows on it */
+const BGS = {
+  wilds: { sky: ['#1c0c3a', '#2e1660', '#4a2a8a', '#6a40c0'], far: '#3a1430', near: '#552042', ground: ['#b4443c', '#9c3434', '#cf5e48'], edge: '#7a2430', tuft: ['#5a2ca4', '#8a50e4', '#8ff0ff'], spot: 'rgba(60,10,40,0.35)', planet: 52, hills: 'mesa' },
+  boss: { sky: ['#1a0820', '#2a0e30', '#3e1638', '#5a1e40'], far: '#2a0c1c', near: '#3a1222', ground: ['#5a2a34', '#4a2230', '#6a3440'], edge: '#2a1420', tuft: ['#7a7e94', '#b8bccc', '#8ff0ff'], spot: 'rgba(10,0,10,0.35)', planet: 70, hills: 'mesa' },
+  jungle: { sky: ['#06201a', '#0c3026', '#164a34', '#22603e'], far: '#0a2a1a', near: '#123a24', ground: ['#25603f', '#1b4a30', '#3a8058'], edge: '#0a2416', tuft: ['#2fa070', '#3fc080', '#8ff0ff'], spot: 'rgba(0,20,10,0.35)', planet: null, hills: 'trees' },
+  groove: { sky: ['#2c0a56', '#3e127c', '#561ca2', '#7a2ac8'], far: '#3a1660', near: '#4a1f7a', ground: ['#4a1f7a', '#3a1660', '#6a2fa8'], edge: '#2a0e48', tuft: ['#ff6ab0', '#5ff2ff', '#ffd25a'], spot: 'rgba(30,0,40,0.35)', planet: 92, hills: 'shrooms' },
+  veil: { sky: ['#05020a', '#0e0618', '#1a0c2a', '#2a1440'], far: '#0a0414', near: '#140a22', ground: ['#1e1430', '#160e26', '#2a1c40'], edge: '#0a0414', tuft: ['#3a2a5a', '#6a4a9a', '#b06aff'], spot: 'rgba(0,0,0,0.4)', planet: null, hills: 'spires' },
+};
+function background(kind) {
+  const B = BGS[kind] || BGS.wilds, c = makeCanvas(W, 96), g = c.getContext('2d'), sky = B.sky;
   for (let y = 0; y < 60; y++) {
     const t = y / 60, i = Math.min(3, Math.floor(t * 4)), j = Math.min(3, i + 1), f = t * 4 - i;
     for (let x = 0; x < W; x++) { g.fillStyle = (f + (hash(x, y, 3) - 0.5) * 0.35) > 0.5 ? sky[j] : sky[i]; g.fillRect(x, y, 1, 1); }
   }
-  for (let i = 0; i < 40; i++) { g.fillStyle = i % 5 ? '#b48cff' : '#ffffff'; g.fillRect(Math.floor(hash(i, 1, 9) * W), Math.floor(hash(i, 2, 9) * 46), 1, 1); }
-  PLANET = PLANET || buildProps().planet.img[0];
-  g.drawImage(PLANET, boss ? 70 : 52, 20);
-  // mesas on the horizon
-  g.fillStyle = boss ? '#2a0c1c' : '#3a1430';
-  for (let x = 0; x < W; x++) { const h = 6 + Math.round(4 * Math.sin(x / 11) + 3 * Math.sin(x / 5.3) + (x > 60 && x < 90 ? 6 : 0)); g.fillRect(x, 60 - h, 1, h); }
-  g.fillStyle = boss ? '#3a1222' : '#552042';
+  for (let i = 0; i < 40; i++) { g.fillStyle = i % 5 ? (kind === 'groove' ? '#ffb0f0' : '#b48cff') : '#ffffff'; g.fillRect(Math.floor(hash(i, 1, 9) * W), Math.floor(hash(i, 2, 9) * 46), 1, 1); }
+  if (B.planet !== null) { PLANET = PLANET || buildProps().planet.img[0]; g.drawImage(PLANET, B.planet, 20); }
+  // the horizon
+  g.fillStyle = B.far;
+  if (B.hills === 'mesa') {
+    for (let x = 0; x < W; x++) { const h = 6 + Math.round(4 * Math.sin(x / 11) + 3 * Math.sin(x / 5.3) + (x > 60 && x < 90 ? 6 : 0)); g.fillRect(x, 60 - h, 1, h); }
+  } else if (B.hills === 'trees') {   // the jungle: a canopy of giant trees, and trunks below it
+    for (let x = 0; x < W; x++) { const h = 30 + Math.round(6 * Math.sin(x / 9) + 4 * Math.sin(x / 4.1) + 3 * Math.sin(x / 2.3)); g.fillRect(x, 60 - h, 1, h - 14); }
+    for (let i = 0; i < 9; i++) { const tx = Math.floor(hash(i, 3, 21) * W); g.fillRect(tx, 40, 3 + (i % 3), 20); }
+    g.fillStyle = '#ff9ad8'; for (let i = 0; i < 7; i++) g.fillRect(Math.floor(hash(i, 4, 21) * W), 26 + Math.floor(hash(i, 5, 21) * 12), 1, 1);
+  } else if (B.hills === 'shrooms') {   // the Groove: giant mushrooms on the horizon
+    for (const [mx, w, h] of [[14, 26, 30], [52, 18, 22], [86, 30, 36], [128, 22, 26], [156, 18, 20]]) {
+      g.fillRect(mx - 2, 60 - h + 8, 5, h - 8);
+      for (let dy = 0; dy <= 9; dy++) { const hw = Math.round((w / 2) * Math.sqrt(1 - (dy / 9.5) ** 2)); g.fillRect(mx - hw, 60 - h + 8 - dy, hw * 2, 1); }
+    }
+  } else {   // beyond the veil: twisted black spires
+    for (let x = 0; x < W; x++) { const h = 8 + Math.round(Math.abs(Math.sin(x / 7)) * 14 * hash(Math.floor(x / 7), 0, 31)); g.fillRect(x, 60 - h, 1, h); }
+  }
+  g.fillStyle = B.near;
   for (let x = 0; x < W; x++) { const h = 3 + Math.round(2 * Math.sin(x / 7 + 1)); g.fillRect(x, 60 - h, 1, h); }
   // the ground
-  const grd = boss ? ['#5a2a34', '#4a2230', '#6a3440'] : ['#b4443c', '#9c3434', '#cf5e48'];
+  const grd = B.ground;
   for (let y = 60; y < 96; y++) for (let x = 0; x < W; x++) { const r = hash(x, y, 4); g.fillStyle = r < 0.08 ? grd[2] : r < 0.2 ? grd[1] : grd[0]; g.fillRect(x, y, 1, 1); }
-  g.fillStyle = boss ? '#2a1420' : '#7a2430'; g.fillRect(0, 60, W, 1);
-  // tufts of glowgrass and glowing flowers
+  g.fillStyle = B.edge; g.fillRect(0, 60, W, 1);
+  // tufts (glowgrass, ferns, little mushrooms) with glowing tips
   for (let i = 0; i < 22; i++) {
     const x = Math.floor(hash(i, 5, 7) * W), y = 64 + Math.floor(hash(i, 6, 7) * 30);
-    g.fillStyle = boss ? '#7a7e94' : '#5a2ca4'; g.fillRect(x, y - 3, 1, 3); g.fillRect(x + 2, y - 4, 1, 4); g.fillStyle = boss ? '#b8bccc' : '#8a50e4'; g.fillRect(x + 1, y - 5, 1, 5);
-    if (i % 4 === 0) { g.fillStyle = '#8ff0ff'; g.fillRect(x + 1, y - 6, 1, 1); }
+    g.fillStyle = B.tuft[0]; g.fillRect(x, y - 3, 1, 3); g.fillRect(x + 2, y - 4, 1, 4); g.fillStyle = B.tuft[1]; g.fillRect(x + 1, y - 5, 1, 5);
+    if (i % 4 === 0) { g.fillStyle = B.tuft[2]; g.fillRect(x + 1, y - 6, 1, 1); }
   }
   // the two spots where you and the foe stand
   for (const [cx, cy, rx] of [[118, 64, 22], [44, 89, 26]]) {
-    for (let y = -4; y <= 4; y++) for (let x = -rx; x <= rx; x++) if ((x * x) / (rx * rx) + (y * y) / 16 <= 1) { g.fillStyle = boss ? 'rgba(10,0,10,0.35)' : 'rgba(60,10,40,0.35)'; g.fillRect(cx + x, cy + y, 1, 1); }
+    for (let y = -4; y <= 4; y++) for (let x = -rx; x <= rx; x++) if ((x * x) / (rx * rx) + (y * y) / 16 <= 1) { g.fillStyle = B.spot; g.fillRect(cx + x, cy + y, 1, 1); }
   }
   return c;
 }
@@ -58,16 +80,18 @@ export class Battle {
     const st = game.state, pet = st.pet, s = companionStats(pet);
     this.me = { side: 'me', name: pet.name, lv: pet.lv, hp: pet.hp, maxHp: s.hp, en: pet.en, maxEn: MAX_EN(pet.lv), atk: s.atk, def: s.def, spd: s.spd, art: companionArt(pet), stages: { atk: 0, def: 0, acc: 0, spd: 0 }, status: {}, disp: pet.hp };
     this.foe = { side: 'foe', ...foe, stages: { atk: 0, def: 0, acc: 0, spd: 0 }, status: {}, disp: foe.hp };
-    this.enyaHere = !!st.flags.enya;
+    this.enyaHere = enyaWith(st);
     this.enyaCool = { flash: 1, cheer: 0 };
-    this.bg = background(!!foe.big);
+    this.fury = opt.fury || 0;
+    const area = world && world.map ? world.map.id : 'wilds';
+    this.bg = background(foe.ghoul ? 'veil' : foe.big ? 'boss' : { jungle: 'jungle', groove: 'groove' }[area] || 'wilds');
     this.fx = [];
-    this.anim = { me: { dx: -120, dy: 0, blink: 0, hide: false }, foe: { dx: 120, dy: 0, blink: 0, hide: false, sink: 0 }, enya: { dx: this.enyaHere ? -120 : -200, dy: 0, blink: 0 } };
+    this.anim = { me: { dx: -120, dy: 0, blink: 0, hide: false }, foe: { dx: 120, dy: 0, blink: 0, hide: false, sink: 0, scale: 1, white: 0 }, enya: { dx: this.enyaHere ? -120 : -200, dy: 0, blink: 0 } };
     this.phase = 'intro';
     this.prompt = null;
     this.result = new Promise((r) => { this.resolve = r; });
     this.t = 0;
-    playMusic(foe.boss ? 'boss' : Math.random() < 0.5 ? 'battle' : 'battle2');
+    playMusic(foe.ghoul ? 'ghoul' : foe.boss ? 'boss' : Math.random() < 0.5 ? 'battle' : 'battle2');
     this.go().catch((e) => { console.error(e); this.end('run'); });
   }
 
@@ -78,7 +102,8 @@ export class Battle {
     sfx.cry(foe.species);
     this.anim.foe.wig = 20;
     await this.msg(WILD[foe.species].intro);
-    if (this.enyaHere) await this.msg('ENYA and the EMERALD TIGER fight beside you!');
+    if (foe.ghoul) { this.addFury(25); await this.msg('Your eyes flicker green at the sight of it. Your FURY rises!'); }
+    if (this.enyaHere) await this.msg("ENYA's echo and the EMERALD TIGER fight beside you!");
     ({ tiger: sfx.rawr, dragon: sfx.puff, octo: sfx.blub }[this.game.state.pet.species] || sfx.wiggle)();
     this.anim.me.dy = -6; this.game.wait(8).then(() => { this.anim.me.dy = 0; });
     await this.msg('Go, ' + me.name + '!');
@@ -95,6 +120,7 @@ export class Battle {
         await this.act(foe, me, this.foeMove());
       } else if (act.type === 'item' || act.type === 'guard') {
         if (act.type === 'guard') { me.status.guard = true; me.en = Math.min(me.maxEn, me.en + 3); sfx.guard(); await this.msg(me.name + ' braces for impact! (+3 EN)'); }
+        else if (ITEMS[act.item].capture) { if ((await this.capture()) === 'caught') return this.caught(); }
         else await this.useItem(act.item);
         me.acted = true;
         await this.act(foe, me, this.foeMove());
@@ -110,12 +136,15 @@ export class Battle {
       if (foe.hp <= 0) return this.win();
       if (me.hp <= 0) return this.lose();
       if (this.enyaHere) { await this.enyaAct(); if (foe.hp <= 0) return this.win(); }
+      // your warrior blood boils over
+      if (this.fury >= 100) { await this.furyBurst(); if (foe.hp <= 0) return this.win(); }
       // end of the round: burns, wearing-off effects, a little energy back
       for (const u of [me, foe]) {
         if (u.status.burn > 0 && u.hp > 0) {
           const d = Math.max(1, Math.round(u.maxHp / 12));
           await this.flashHit(u);
           u.hp = Math.max(0, u.hp - d);
+          if (u === me) this.addFury(8);
           await this.drain(u);
           await this.msg(u.name + ' is hurt by its burn!');
           if (--u.status.burn <= 0) await this.msg(u.name + "'s burn healed.");
@@ -130,6 +159,7 @@ export class Battle {
 
   speed(u) { return u.spd * STAGE[u.stages.spd]; }
   foeMove() { const list = this.foe.moves; return list[Math.floor(Math.random() * list.length)]; }
+  addFury(n) { this.fury = Math.min(100, this.fury + n); }
 
   async act(user, target, moveId) {
     const mv = MOVES[moveId], self = user.side === 'me';
@@ -145,7 +175,7 @@ export class Battle {
         user.hp = Math.min(user.maxHp, user.hp + amt);
         sfx.heal();
         await this.drain(user);
-        await this.msg(user.name + ' feels much better!');
+        await this.msg(moveId === 'lick' ? 'Tiger saliva heals fast! ' + user.name + ' feels much better!' : user.name + ' feels much better!');
       }
       if (mv.buff) await this.stage(user, mv.buff.stat, mv.buff.by);
       return;
@@ -173,6 +203,7 @@ export class Battle {
         dmg = Math.max(1, Math.round(dmg));
         (c ? sfx.crit : sfx.hit)();
         target.hp = Math.max(0, target.hp - dmg);
+        if (target === this.me) this.addFury((dmg / target.maxHp) * 150 * (this.foe.ghoul ? 1.5 : 1) + (c ? 10 : 0));
         await this.flashHit(target, c);
         await this.drain(target);
       }
@@ -184,7 +215,7 @@ export class Battle {
     if (mv.burn && !target.status.burn && Math.random() < mv.burn) { target.status.burn = 3; await this.msg(target.name + ' was burned!'); }
     if (mv.daze && Math.random() < mv.daze * (target.boss ? 0.5 : 1)) { target.status.daze = true; await this.msg(target.name + ' is dazed!'); }
     if (mv.flinch && !target.acted && Math.random() < mv.flinch * (target.boss ? 0.5 : 1)) target.status.flinch = true;
-    if (mv.debuff) await this.stage(target, mv.debuff.stat, mv.debuff.by);
+    if (mv.debuff) { if (target === this.me) this.addFury(6); await this.stage(target, mv.debuff.stat, mv.debuff.by); }
   }
 
   async stage(u, stat, by) {
@@ -206,28 +237,130 @@ export class Battle {
     await this.msg(me.name + ' feels great!');
   }
 
-  /* ---------- Enya ---------- */
+  /* ---------- your warrior blood ---------- */
+  async furyBurst() {
+    const g = this.game, st = g.state, me = this.me, foe = this.foe;
+    this.fury = 0;
+    sfx.fury();
+    this.cutin = { t: 0 };   // a close-up of your eyes, turning from violet to blazing green
+    await g.until(() => this.cutin.t >= 72);
+    this.cutin = null;
+    st.furyT = 2400;         // they stay green for a while afterwards
+    await this.msg('Your eyes blaze green! The warrior blood of your ancestors surges!', 30);
+    sfx.whoosh();
+    const tp = this.pos(foe);
+    for (let i = 0; i < 3; i++) { this.fx.push({ k: 'bolt', x0: -4, y0: 74, x1: tp.x, y1: tp.y, life: 16, t: 0 }); await g.wait(4); }
+    g.flash(GREEN, 12); g.shake(18, 3); sfx.crit();
+    this.fx.push({ k: 'star', x: tp.x, y: tp.y, life: 20, t: 0, col: GREEN });
+    const A = 12 + me.lv * 2.2, dmg = Math.max(1, Math.round(((70 * A) / 21) * 0.36 * rnd(0.9, 1.05)));
+    foe.hp = Math.max(0, foe.hp - dmg);
+    await this.flashHit(foe, true);
+    await this.drain(foe);
+    await this.msg('WARRIOR STRIKE! It hits ' + foe.name + ' hard!', 30);
+    if (await remember(g, 'blood')) await this.msg("(FURY builds when your companion is hurt. When it's full, your warrior blood takes over!)", 60);
+    if (foe.hp > 0) { this.aura = true; await this.stage(me, 'atk', 1); }
+  }
+
+  /* ---------- COSMIC TUBES ---------- */
+  async capture() {
+    const g = this.game, st = g.state, foe = this.foe, w = WILD[foe.species], nova = st.pet.species === 'tiger';
+    if (nova && w.catch) { await this.msg(st.pet.name + ' pins ' + foe.name + ' down!'); await this.play('pin', this.me, foe); }
+    await this.msg('You open a COSMIC TUBE!');
+    if (!w.catch) {   // a ghoul isn't of this world: the light can't hold it (and the tube isn't used up)
+      await this.tubeAnim(false, 0, true);
+      await this.msg("The light passes straight through it! It isn't from this world...");
+      return 'fail';
+    }
+    st.bag.tube--;
+    const hpf = foe.hp / foe.maxHp;
+    const p = Math.max(0.05, Math.min(0.95, w.catch * (0.2 + 0.8 * (1 - hpf)) + (foe.status.daze ? 0.15 : 0) + (nova ? 0.12 : 0)));
+    const per = Math.pow(p, 1 / 3);
+    let shakes = 0;
+    while (shakes < 3 && Math.random() < per) shakes++;
+    await this.tubeAnim(shakes === 3, shakes, false);
+    if (shakes === 3) return 'caught';
+    await this.msg(['Oh no! ' + foe.name + ' broke free!', 'Argh! So close!', 'Almost had it!'][Math.min(2, shakes)]);
+    return 'fail';
+  }
+  async tubeAnim(ok, shakes, ghost) {
+    const g = this.game, A = this.anim.foe, fp = this.pos(this.foe), floor = this.foe.big ? 66 : 64, hover = this.foe.big ? 30 : 38;
+    sfx.tube();
+    this.tube = { x: fp.x, y: -2, glow: 0, wob: 0 };
+    for (let i = 0; i <= 14; i++) { this.tube.y = -2 + (hover + 2) * (1 - (1 - i / 14) ** 2); await g.wait(1); }
+    this.fx.push({ k: 'tbeam', x: fp.x, y: hover, y1: floor, life: 28, t: 0 });
+    if (ghost) {
+      for (let i = 0; i < 28; i++) { A.white = 0.5 * Math.sin((i / 28) * Math.PI); await g.wait(1); }
+      A.white = 0;
+      for (let i = 0; i <= 10; i++) { this.tube.y = hover + (floor - hover) * (i / 10); await g.wait(1); }
+      sfx.breakfree();
+      this.tube = null;
+      return;
+    }
+    for (let i = 0; i <= 24; i++) { const k = i / 24; A.white = Math.min(1, k * 2); A.scale = 1 - k * 0.92; await g.wait(1); }
+    A.hide = true; A.scale = 1; A.white = 0;
+    for (let i = 0; i <= 10; i++) { this.tube.y = hover + (floor - hover) * (i / 10) ** 2; await g.wait(1); }
+    sfx.land();
+    for (let s = 0; s < (ok ? 3 : shakes); s++) {
+      await g.wait(16);
+      sfx.wobble();
+      for (let i = 0; i < 18; i++) { this.tube.wob = Math.round(Math.sin((i / 18) * Math.PI * 3) * 2); await g.wait(1); }
+      this.tube.wob = 0;
+      this.fx.push({ k: 'ring', x: this.tube.x, y: floor - 9, life: 30, t: 0, col: ['#8ff0ff', '#c08cff', '#ffd23a'][s] });
+    }
+    await g.wait(16);
+    if (ok) {
+      this.tube.glow = 1;
+      sfx.captured();
+      g.flash('#ffffff', 8);
+      this.sparkleAt(this.tube.x, floor - 10, 22, ['#ffffff', '#8ff0ff', '#c08cff', '#ffd23a']);
+      for (let i = 0; i < 3; i++) this.fx.push({ k: 'ring', x: this.tube.x, y: floor - 9, life: 36, t: -i * 8, col: '#ffffff' });
+      await g.wait(34);
+      return;
+    }
+    sfx.breakfree();
+    for (let i = 0; i < 14; i++) { const a = Math.random() * Math.PI * 2, s = rnd(0.6, 2); this.fx.push({ k: 'shard', x: this.tube.x, y: floor - 9, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, g: 0.08, life: 30, t: 0, col: i % 2 ? '#c8f4ff' : '#ffffff' }); }
+    this.tube = null;
+    A.hide = false;
+    for (let i = 0; i <= 12; i++) { A.scale = i / 12; A.white = 1 - i / 12; await g.wait(1); }
+    A.scale = 1; A.white = 0;
+  }
+  async caught() {
+    const st = this.game.state, foe = this.foe;
+    await this.msg(foe.name + ' is held in an infinity of light. Captured!');
+    st.tubes = st.tubes || {};
+    st.tubes[foe.species] = (st.tubes[foe.species] || 0) + 1;
+    st.captures = (st.captures || 0) + 1;
+    if (st.tubes[foe.species] === 1) await this.msg('A new creature for your COSMIC TUBES! (START, then TUBES)');
+    playMusic('victory');
+    await this.reward(false);
+    return this.end('win');
+  }
+
+  /* ---------- Enya's echo ---------- */
   async enyaEnters() {
-    sfx.roar();
-    this.game.shake(16, 2);
-    await this.msg('A roar shakes the Wilds!');
+    const g = this.game;
+    sfx.rift();
+    g.shake(16, 2);
+    this.fx.push({ k: 'rift', x: 22, y: 54, life: 70, t: 0 });
+    await this.msg('The air TEARS open like glass!');
     playMusic('enya');
     this.enyaHere = true;
-    for (let i = 0; i <= 24; i++) { this.anim.enya.dx = -200 + (200 * i) / 24; await this.game.wait(1); }
-    sfx.flash();
+    sfx.shatter();
+    for (let i = 0; i < 16; i++) { const a = Math.random() * Math.PI * 2, s = rnd(0.6, 2.2); this.fx.push({ k: 'shard', x: 22, y: 54, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, g: 0.07, life: 36, t: 0, col: i % 2 ? '#c8f4ff' : '#ffffff' }); }
+    for (let i = 0; i <= 24; i++) { this.anim.enya.dx = -200 + (200 * i) / 24; await g.wait(1); }
     this.sparkleAt(22, 56, 14);
-    await this.msg('A girl with golden hair rides in on a huge green tiger!');
+    await this.msg('A girl with golden hair leaps through on a huge, ghostly green tiger!');
     await this.msg('ENYA: Easy there, scaly! Pick on someone your own size!', 0, 'ENYA');
   }
   async enyaAct() {
-    const me = this.me, foe = this.foe, c = this.enyaCool;
+    const g = this.game, st = g.state, me = this.me, foe = this.foe, c = this.enyaCool;
     c.flash--; c.cheer--;
     if (me.hp < me.maxHp * 0.45 && c.cheer <= 0) {
       c.cheer = 4;
       await this.msg('ENYA: Hang in there, ' + me.name + '! SHAMROCK CHEER!', 0, 'ENYA');
       sfx.heal();
       this.spawnShamrocks();
-      await this.game.wait(30);
+      await g.wait(30);
       me.hp = Math.min(me.maxHp, me.hp + Math.round(me.maxHp * 0.3));
       await this.drain(me);
       await this.msg(me.name + ' feels lucky! HP restored.');
@@ -235,10 +368,11 @@ export class Battle {
     }
     if (c.flash <= 0 && !foe.status.daze && Math.random() < 0.6) {
       c.flash = 3;
-      await this.msg('ENYA used DIAMOND FLASH!', 0);
+      await this.msg('ENYA used DIAMOND FLASH! The GEM at her throat blazes!', 0);
       await this.play('flash', null, foe);
-      if (Math.random() < (foe.boss ? 0.7 : 1)) { foe.status.daze = true; await this.msg('Her necklace flashes in ' + foe.name + "'s eyes. " + foe.name + ' is dazed!'); }
+      if (Math.random() < (foe.boss ? 0.7 : 1)) { foe.status.daze = true; await this.msg('Its light shatters like a diamond in ' + foe.name + "'s eyes. " + foe.name + ' is dazed!'); }
       else await this.msg(foe.name + ' shut its eyes just in time!');
+      if (!st.flags['saw-flash']) { st.flags['saw-flash'] = true; await g.say('That light... I know that light...', { name: st.name, mutter: true }); }
       return;
     }
     await this.msg('The EMERALD TIGER pounces!', 0);
@@ -250,15 +384,27 @@ export class Battle {
     await this.flashHit(foe);
     await this.drain(foe);
   }
+  /* someone said "Em" or "Gem": NOVA's hearts float up */
+  onLove(g) {
+    if (g.state.pet.species !== 'tiger' || this.anim.me.hide || g.t - (this.loveT ?? -999) < 40) return;
+    this.loveT = g.t;
+    for (let i = 0; i < 5; i++) this.fx.push({ k: 'heart', x: 50 + rnd(-12, 12), y: 64 - i * 3, vy: -rnd(0.3, 0.55), life: 60 + i * 6, t: -i * 6 });
+  }
 
   /* ---------- the end ---------- */
   async win() {
-    const g = this.game, st = g.state, me = this.me, foe = this.foe, pet = st.pet;
+    const g = this.game, foe = this.foe;
     sfx.faint();
     for (let i = 0; i < 30; i++) { this.anim.foe.sink = i; await g.wait(1); }
     this.anim.foe.hide = true;
-    await this.msg(foe.boss ? foe.name + ' is beaten!' : 'The wild ' + foe.name + ' is out cold!');
+    await this.msg(foe.boss ? foe.name + ' is beaten!' : foe.ghoul ? 'The ' + foe.name + ' melts back into the shadows!' : 'The wild ' + foe.name + ' is out cold!');
     playMusic('victory');
+    await this.reward(true);
+    return this.end('win');
+  }
+  /* XP, levelling up, new moves and (after a win) maybe a jewel */
+  async reward(jewels) {
+    const st = this.game.state, me = this.me, foe = this.foe, pet = st.pet;
     pet.hp = me.hp; pet.en = me.en;
     st.battles = (st.battles || 0) + 1;
     const gain = Math.round((WILD[foe.species].xp * foe.lv) / 2.2);
@@ -279,6 +425,7 @@ export class Battle {
         if (!pet.moves.includes(m)) { pet.moves.push(m); sfx.buff(); await this.msg(me.name + ' learned ' + MOVES[m].name + '!'); }
       }
     }
+    if (!jewels) return;
     const chance = WILD[foe.species].jewel || (foe.boss ? 1 : 0.35);
     if (Math.random() < chance) {
       const r = Math.random(), kind = foe.boss ? 'diamond' : r < 0.5 ? 'gold' : r < 0.65 ? 'emerald' : r < 0.8 ? 'sapphire' : r < 0.95 ? 'ruby' : 'diamond';
@@ -287,7 +434,6 @@ export class Battle {
       sfx.jewel(kind);
       await this.msg(foe.short + ' left behind a ' + JEWELS[kind].name + '!');
     }
-    return this.end('win');
   }
   async lose() {
     const st = this.game.state;
@@ -327,6 +473,7 @@ export class Battle {
         if (!ids.length) { await this.msg('Your bag has nothing useful in it.'); continue; }
         const j = await g.menu(ids.map((k) => ({ label: ITEMS[k].name, right: '×' + st.bag[k] })), { x: 52, y: 142 - ids.length * 11 - 9, w: 106, under: (ctx, k) => this.drawInfo(ctx, ITEMS[ids[k]].desc) });
         if (j < 0) continue;
+        if (ITEMS[ids[j]].capture && this.foe.boss) { await this.msg(this.foe.name + ' is far too strong to fit in a tube!'); continue; }
         return { type: 'item', item: ids[j] };
       }
       if (i === 2) return { type: 'guard' };
@@ -390,10 +537,10 @@ export class Battle {
       await g.wait(14);
     };
     switch (fx) {
-      case 'claw': case 'whip':
+      case 'claw': case 'whip': case 'vine':
         sfx.slash();
         if (side) lunge(8, 4);
-        for (let i = 0; i < (fx === 'whip' ? 4 : 3); i++) { this.fx.push({ k: 'slash', x: tp.x - 10 + i * 7, y: tp.y - 12, life: 14, t: 0, col: fx === 'whip' ? '#8ff0ff' : '#ffffff' }); await g.wait(5); }
+        for (let i = 0; i < (fx === 'claw' ? 3 : 4); i++) { this.fx.push({ k: 'slash', x: tp.x - 10 + i * 7, y: tp.y - 12, life: 14, t: 0, col: { claw: '#ffffff', whip: '#8ff0ff', vine: '#5fe07a' }[fx] }); await g.wait(5); }
         await g.wait(10); break;
       case 'roar':
         sfx.roar(); g.shake(24, 2);
@@ -405,6 +552,15 @@ export class Battle {
         for (let i = 0; i <= steps; i++) { const t = i / steps; a.dx = dir * 60 * t; a.dy = -Math.sin(t * Math.PI) * (fx === 'dive' ? 40 : 18); await g.wait(1); }
         g.shake(12, 3); this.fx.push({ k: 'star', x: tp.x, y: tp.y, life: 16, t: 0 });
         for (let i = steps; i >= 0; i--) { a.dx = dir * 60 * (i / steps); a.dy = 0; await g.wait(1); }
+        break;
+      }
+      case 'pin': {   // NOVA leaps on the foe and holds it down for the tube
+        sfx.whoosh();
+        const a = side, steps = 12;
+        for (let i = 0; i <= steps; i++) { const k = i / steps; a.dx = dir * 52 * k; a.dy = -Math.sin(k * Math.PI) * 14; await g.wait(1); }
+        g.shake(8, 2); sfx.rawr(); this.fx.push({ k: 'star', x: tp.x, y: tp.y + 6, life: 14, t: 0, col: '#ffd23a' });
+        await g.wait(16);
+        for (let i = steps; i >= 0; i--) { a.dx = dir * 52 * (i / steps); a.dy = 0; await g.wait(1); }
         break;
       }
       case 'step':
@@ -419,16 +575,35 @@ export class Battle {
         sfx.flame();
         for (let i = 0; i < 40; i++) { this.fx.push({ k: 'flame', x: up.x + rnd(-14, 14), y: up.y + 14, vy: -rnd(0.6, 1.2), life: 24, t: 0 }); await g.wait(1); }
         g.flash('#ff3b2f', 8); await g.wait(10); break;
+      case 'lick':   // a big lick: hearts and sparkles, and the wounds close up
+        sfx.lick();
+        for (let i = 0; i < 6; i++) this.fx.push({ k: 'heart', x: up.x + rnd(-14, 14), y: up.y + rnd(-4, 8), vy: -rnd(0.3, 0.6), life: 50, t: -i * 5 });
+        for (let i = 0; i < 10; i++) this.fx.push({ k: 'dot', x: up.x + rnd(-8, 8), y: up.y - 4, vx: rnd(-0.6, 0.6), vy: rnd(-1, 0), life: 22, t: -i * 2, col: i % 2 ? '#ff8ad8' : '#c8f4ff' });
+        await g.wait(40); break;
       case 'flame': sfx.flame(); await stream(['#ffffff', '#ffd23a', '#ff8a1e', '#e8302a'], 30, 2); this.fx.push({ k: 'star', x: tp.x, y: tp.y, life: 16, t: 0, col: '#ff8a1e' }); break;
       case 'frost': sfx.frost(); await stream(['#ffffff', '#c8f4ff', '#6fe0ff'], 30, 2); this.sparkleAt(tp.x, tp.y, 14, ['#ffffff', '#c8f4ff']); break;
       case 'jet': sfx.flame(); g.shake(20, 2); await stream(['#ffffff', '#fff2a0', '#ff8a1e', '#ff5a1a'], 36, 3); break;
       case 'goo': sfx.ink(); await stream(['#7ee04a', '#3fa830', '#d8ffb0'], 14, 2); break;
       case 'shard': sfx.zap(); await stream(['#5ff2ff', '#e0ffff', '#c08cff'], 12, 2); break;
+      case 'zapsting': sfx.zap(); await stream(['#ff7ad8', '#ffffff', '#ffd2f0', '#5ff2ff'], 16, 2); this.sparkleAt(tp.x, tp.y, 12, ['#ff7ad8', '#ffffff', '#5ff2ff']); break;
+      case 'shadow': sfx.cry('ghoul'); await stream(['#2a1640', '#5a2a8a', '#0a0410', '#b06aff'], 18, 2); this.fx.push({ k: 'slash', x: tp.x - 6, y: tp.y - 12, life: 14, t: 0, col: '#c88aff' }); g.shake(8, 2); await g.wait(10); break;
+      case 'wail':
+        sfx.cry('ghoul'); g.shake(16, 2);
+        for (let i = 0; i < 4; i++) { this.fx.push({ k: 'arc', x: up.mouth.x, y: up.mouth.y, dir, life: 28, t: 0, col: i % 2 ? '#8a5ad8' : '#c8b0ff' }); await g.wait(6); }
+        await g.wait(14); break;
+      case 'drum':
+        sfx.drum(); if (side) lunge(8, 4);
+        for (let i = 0; i < 3; i++) { this.fx.push({ k: 'note', x: tp.x + rnd(-12, 12), y: tp.y - 6, vy: -0.6, life: 30, t: 0, col: ['#ff8ad8', '#5ff2ff', '#ffd23a'][i] }); await g.wait(5); }
+        await g.wait(8); break;
+      case 'bassdrop':
+        sfx.boom(); g.shake(22, 3);
+        for (let i = 0; i < 4; i++) { this.fx.push({ k: 'ring', x: up.x, y: up.y + 10, life: 30, t: 0, col: i % 2 ? '#ff8ad8' : '#5ff2ff' }); await g.wait(5); }
+        this.fx.push({ k: 'star', x: tp.x, y: tp.y, life: 16, t: 0, col: '#ff8ad8' }); await g.wait(14); break;
       case 'tail':
         sfx.whoosh(); if (side) lunge(16, 6);
         this.fx.push({ k: 'spin', x: tp.x, y: tp.y, life: 20, t: 0 }); await g.wait(22); break;
-      case 'smoke': case 'mist': case 'ink': case 'spores': {
-        const cols = { smoke: ['#c83a3a', '#8a2a3a', '#e8604a'], mist: ['#c8f4ff', '#8ab0d8', '#ffffff'], ink: ['#3a2a7a', '#5fc8f8', '#1a0f2e'], spores: ['#c49cff', '#8ff0ff', '#a050e0'] }[fx];
+      case 'smoke': case 'mist': case 'ink': case 'spores': case 'dust': {
+        const cols = { smoke: ['#c83a3a', '#8a2a3a', '#e8604a'], mist: ['#c8f4ff', '#8ab0d8', '#ffffff'], ink: ['#3a2a7a', '#5fc8f8', '#1a0f2e'], spores: ['#c49cff', '#8ff0ff', '#a050e0'], dust: ['#ffe6a0', '#fff2c0', '#d0a868'] }[fx];
         (fx === 'ink' ? sfx.ink : sfx.whoosh)();
         for (let i = 0; i < 16; i++) { this.fx.push({ k: 'puff', x: tp.x + rnd(-14, 14), y: tp.y + rnd(-10, 10), life: 40, t: 0, col: cols[i % 3] }); await g.wait(2); }
         await g.wait(20); break;
@@ -443,14 +618,18 @@ export class Battle {
         for (let i = 0; i < 24; i++) { const cols = ['#ff5a5a', '#ffd23a', '#5fe07a', '#5ff2ff', '#7f8aff', '#c08cff']; this.sparkleAt(tp.x + rnd(-10, 10), tp.y + rnd(-10, 10), 1, [cols[i % 6]]); await g.wait(1); }
         g.flash('#ffffff', 6); await g.wait(16); break;
       case 'harden': sfx.guard(); this.fx.push({ k: 'shine', x: up.x, y: up.y, life: 24, t: 0 }); await g.wait(26); break;
-      case 'flash': {   // Enya's Diamond Flash
+      case 'flash': {   // Enya's Diamond Flash: the GEM blazes, then its light shatters like a diamond
         sfx.flash();
         const nx = 21, ny = 52;
         this.fx.push({ k: 'burst', x: nx, y: ny, life: 40, t: 0 });
         g.flash('#ffffff', 22);
         if (g.hooks.burst) g.hooks.burst(nx, ny);
-        this.sparkleAt(tp.x, tp.y, 18, ['#ffffff', '#c8f4ff', '#ffd23a']);
-        await g.wait(40); break;
+        await g.wait(14);
+        sfx.shatter();
+        this.fx.push({ k: 'crack', x: tp.x, y: tp.y, life: 16, t: 0, seed: Math.floor(Math.random() * 1000) });
+        for (let i = 0; i < 22; i++) { const a = Math.random() * Math.PI * 2, s = rnd(0.8, 2.6); this.fx.push({ k: 'shard', x: tp.x, y: tp.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1, g: 0.08, life: 40, t: 0, col: ['#ffffff', '#c8f4ff', '#8ff0ff', '#ffd23a'][i % 4] }); }
+        this.sparkleAt(tp.x, tp.y, 12, ['#ffffff', '#c8f4ff', '#ffd23a']);
+        await g.wait(30); break;
       }
       case 'epounce': {
         const a = this.anim.enya;
@@ -472,28 +651,42 @@ export class Battle {
   update(g) { this.tick(g); }
   tick() {
     this.t++;
-    for (const f of this.fx) { f.t++; if (f.vx !== undefined) { f.x += f.vx; f.y += f.vy; } else if (f.vy !== undefined) f.y += f.vy; }
+    for (const f of this.fx) { f.t++; if (f.vx !== undefined) { f.x += f.vx; f.y += f.vy; if (f.g) f.vy += f.g; } else if (f.vy !== undefined) f.y += f.vy; }
     this.fx = this.fx.filter((f) => f.t < f.life);
     for (const k of ['me', 'foe', 'enya']) { if (this.anim[k].blink > 0) this.anim[k].blink--; if (this.anim[k].wig > 0) this.anim[k].wig--; }
     if (this.levelBox) this.levelBox.t++;
+    if (this.cutin) this.cutin.t++;
+    // fired up after a WARRIOR STRIKE: green sparks rise round your companion
+    if (this.aura && !this.anim.me.hide && this.t % 5 === 0) this.fx.push({ k: 'dot', x: 50 + rnd(-14, 14), y: 88, vx: rnd(-0.1, 0.1), vy: -rnd(0.5, 1), life: 26, t: 0, col: this.t % 10 ? GREEN : '#c8ffb0' });
+    // Enya's echo glitters
+    if (this.enyaHere && this.t % 19 === 0) this.fx.push({ k: 'dot', x: rnd(6, 34), y: rnd(46, 80), vx: 0, vy: -0.25, life: 24, t: 0, col: this.t % 38 ? '#ffffff' : '#c8f4ff' });
   }
   draw(ctx, g) {
     ctx.drawImage(this.bg, 0, 0);
     const t = this.t, me = this.me, foe = this.foe, A = this.anim;
     // the foe
     if (!A.foe.hide && !(A.foe.blink && Math.floor(A.foe.blink / 3) % 2)) {
-      const b = BATTLERS[foe.art], img = spr(b.rows, b.pal);
-      const bob = Math.round(Math.sin(t / 16) * 1);
-      const x = Math.round(118 - img.width / 2 + A.foe.dx + (A.foe.wig ? ((A.foe.wig >> 1) % 2 ? 2 : -2) : 0)), y = Math.round((foe.big ? 66 : 64) - img.height + bob + A.foe.dy + A.foe.sink);
+      const b = BATTLERS[foe.art], img = spr(b.rows, b.pal), s = A.foe.scale;
+      const bob = Math.round(Math.sin(t / 16) * 1), w = img.width * s, h = img.height * s;
+      const x = Math.round(118 - w / 2 + A.foe.dx + (A.foe.wig ? ((A.foe.wig >> 1) % 2 ? 2 : -2) : 0)), y = Math.round((foe.big ? 66 : 64) - h + bob + A.foe.dy + A.foe.sink);
       if (A.foe.sink) { ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, 66); ctx.clip(); ctx.globalAlpha = 1 - A.foe.sink / 30; }
-      ctx.drawImage(img, x, y);
+      if (foe.ghoul && !A.foe.sink) ctx.globalAlpha = 0.85 + 0.15 * Math.sin(t / 7);
+      ctx.drawImage(img, x, y, w, h);
+      ctx.globalAlpha = 1;
+      if (A.foe.white) {   // pulled into the tube's light
+        this.whitePals = this.whitePals || {};
+        const wp = this.whitePals[foe.art] || (this.whitePals[foe.art] = Object.fromEntries(Object.keys(b.pal).map((k) => [k, '#ffffff'])));
+        ctx.globalAlpha = A.foe.white; ctx.drawImage(spr(b.rows, wp), x, y, w, h); ctx.globalAlpha = 1;
+      }
       if (A.foe.sink) ctx.restore();
-      if (foe.status.daze && t % 40 < 30) this.drawDizzy(ctx, 118 + A.foe.dx, y - 2, t);
+      if (foe.status.daze && t % 40 < 30 && s === 1) this.drawDizzy(ctx, 118 + A.foe.dx, y - 2, t);
     }
-    // Enya, behind your companion
+    // Enya's echo, behind your companion: see-through, and she flickers
     if (this.enyaHere || A.enya.dx > -190) {
       const b = BATTLERS.enya, img = spr(b.rows, b.pal), bob = Math.round(Math.sin(t / 18 + 1));
+      ctx.globalAlpha = t % 170 < 4 ? 0.35 : 0.78 + 0.12 * Math.sin(t / 15);
       ctx.drawImage(img, Math.round(2 + A.enya.dx), Math.round(84 - img.height + bob + A.enya.dy));
+      ctx.globalAlpha = 1;
       if (t % 50 < 4) { ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(2 + A.enya.dx) + 17, Math.round(84 - img.height + bob) + 12, 1, 1); }
     }
     // your companion
@@ -508,11 +701,13 @@ export class Battle {
       const img = spr(b.rows, pal), bob = Math.round(Math.sin(t / 14) * 1);
       ctx.drawImage(img, Math.round(50 - img.width / 2 + A.me.dx), Math.round(90 - img.height + bob + A.me.dy));
     }
+    if (this.tube) this.drawTube(ctx);
     // effects
     for (const f of this.fx) this.drawFx(ctx, f);
     // the panels
     this.drawPanels(ctx);
     if (this.levelBox) this.drawLevelBox(ctx);
+    if (this.cutin) this.drawCutIn(ctx);
   }
   drawDizzy(ctx, cx, y, t) {
     for (let i = 0; i < 3; i++) {
@@ -522,20 +717,69 @@ export class Battle {
       ctx.fillRect(x, yy, 1, 1); ctx.fillRect(x - 1, yy, 3, 1); ctx.fillRect(x, yy - 1, 1, 3);
     }
   }
+  /* a COSMIC TUBE: silver caps, and inside the glass an infinity of light, frames inside frames forever */
+  drawTube(ctx) {
+    const tb = this.tube, t = this.t, x = Math.round(tb.x - 5 + tb.wob), y = Math.round(tb.y - 18);
+    if (tb.glow) { ctx.globalAlpha = 0.22 + 0.12 * Math.sin(t / 5); disc(ctx, x + 5, y + 9, 13, '#c8f4ff'); ctx.globalAlpha = 1; }
+    ctx.fillStyle = '#1a0f2e'; ctx.fillRect(x - 1, y - 1, 12, 20);
+    ctx.fillStyle = '#c8ccdc'; ctx.fillRect(x, y, 10, 3); ctx.fillRect(x, y + 15, 10, 3);
+    ctx.fillStyle = '#7a7e94'; ctx.fillRect(x, y + 2, 10, 1); ctx.fillRect(x, y + 15, 10, 1);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 1, y, 3, 1);
+    ctx.fillStyle = '#140832'; ctx.fillRect(x, y + 3, 10, 12);
+    const cols = ['#ffffff', '#8ff0ff', '#c08cff', '#ffd23a', '#ff8ad8'];
+    for (let i = 0; i < 4; i++) {
+      const ix = x + 1 + i, iy = y + 3 + i, iw = 8 - i * 2, ih = 12 - i * 2;
+      ctx.fillStyle = cols[(i + (t >> 2)) % 5];
+      ctx.fillRect(ix, iy, iw, 1); ctx.fillRect(ix, iy + ih - 1, iw, 1); ctx.fillRect(ix, iy, 1, ih); ctx.fillRect(ix + iw - 1, iy, 1, ih);
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillRect(x + 1, y + 4, 1, 7);
+  }
+  /* the close-up of your eyes as your warrior blood takes over */
+  drawCutIn(ctx) {
+    const t = this.cutin.t, slide = Math.min(1, t / 8), out = t > 62 ? Math.min(1, (t - 62) / 8) : 0;
+    const k = Math.min(1, Math.max(0, (t - 14) / 24)), iris = mix(VIOLET, GREEN, k), y0 = 38, h = 36;
+    ctx.save();
+    ctx.translate(Math.round(-W * (1 - slide) + W * out), 0);
+    ctx.fillStyle = '#0a0618'; ctx.fillRect(0, y0, W, h);
+    for (let i = 0; i < 14; i++) { ctx.fillStyle = k > 0.5 ? (i % 2 ? '#1f6a2a' : '#123a1a') : (i % 2 ? '#3a1a6a' : '#22103e'); ctx.fillRect((i * 37 + t * 9) % (W + 20) - 20, y0 + 2 + ((i * 7) % (h - 4)), 18, 1); }
+    ctx.fillStyle = '#ffd0a6'; ctx.fillRect(16, y0 + 5, W - 32, h - 8);
+    ctx.fillStyle = '#e09a6a'; ctx.fillRect(16, y0 + h - 5, W - 32, 2);
+    ctx.fillStyle = '#4a2c1c'; ctx.fillRect(16, y0 + 3, W - 32, 5);
+    for (let x = 16; x < W - 16; x += 6) ctx.fillRect(x, y0 + 8, 4, 2 + ((x / 6) % 3));
+    ctx.fillStyle = '#7a4a2c'; for (let x = 22; x < W - 22; x += 12) ctx.fillRect(x, y0 + 4, 3, 1);
+    for (const [ex, side] of [[W / 2 - 28, 1], [W / 2 + 28, -1]]) {
+      const cy = y0 + 21;
+      // the brow, pulled down towards the middle as he gets angry
+      ctx.fillStyle = '#3a2014';
+      for (let i = 0; i < 24; i++) ctx.fillRect(ex - 12 + i, cy - 9 + Math.round((side > 0 ? i : 23 - i) * k * 0.12), 1, 2);
+      const rows = [8, 16, 20, 22, 22, 20, 16, 8];
+      ctx.fillStyle = '#1a0f2e'; rows.forEach((w, i) => ctx.fillRect(ex - w / 2 - 1, cy - 4 + i, w + 2, 1)); ctx.fillRect(ex - 4, cy - 5, 8, 1); ctx.fillRect(ex - 4, cy + 4, 8, 1);
+      ctx.fillStyle = '#ffffff'; rows.forEach((w, i) => ctx.fillRect(ex - w / 2, cy - 4 + i, w, 1));
+      disc(ctx, ex, cy, 4, iris);
+      disc(ctx, ex, cy, 2, mix(iris, '#1a0f2e', 0.35));
+      ctx.fillStyle = '#1a0f2e'; ctx.fillRect(ex - 1, cy - 2, 2, 4);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(ex + 1, cy - 3, 2, 2);
+      if (k > 0.6) {   // the glow, and green lightning crackling out of the corners
+        ctx.globalAlpha = (k - 0.6) * 2 * (0.6 + 0.4 * Math.sin(t / 2));
+        ctx.fillStyle = GREEN; ctx.fillRect(ex - 15, cy - 1, 4, 2); ctx.fillRect(ex + 12, cy - 1, 4, 2);
+        for (let i = 0; i < 3; i++) { let lx = ex + side * -13, ly = cy + rnd(-3, 3); for (let s = 0; s < 6; s++) { lx -= side * rnd(1, 3); ly += rnd(-2, 2); ctx.fillRect(Math.round(lx), Math.round(ly), 1, 1); } }
+        ctx.globalAlpha = 1;
+      }
+    }
+    ctx.restore();
+    ctx.fillStyle = k > 0.9 ? GREEN : '#b48cff'; ctx.fillRect(0, y0 - 1, W, 1); ctx.fillRect(0, y0 + h, W, 1);
+  }
   drawPanels(ctx) {
     const me = this.me, foe = this.foe;
-    // your companion, top left
-    box(ctx, 2, 2, 76, 30);
+    // your companion, top left, with your FURY underneath
+    box(ctx, 2, 2, 76, 38);
     text(ctx, me.name, 7, 6, C.text);
     text(ctx, 'Lv' + me.lv, 73, 6, C.gold, { align: 'right' });
     text(ctx, 'HP', 7, 15, C.dim); bar(ctx, 19, 17, 28, me.disp / me.maxHp, hpColour(me.disp / me.maxHp));
     text(ctx, me.disp + '/' + me.maxHp, 73, 15, C.text, { align: 'right' });
     text(ctx, 'EN', 7, 23, C.dim); bar(ctx, 19, 25, 54, me.en / me.maxEn, C.cyan);
-    if (this.enyaHere) {
-      box(ctx, 2, 31, 40, 12, { bg: C.bg2 });
-      ctx.fillStyle = '#2fd85a'; ctx.fillRect(6, 35, 2, 2); ctx.fillRect(9, 35, 2, 2); ctx.fillRect(7, 37, 3, 2); ctx.fillRect(8, 39, 1, 2);
-      text(ctx, '+ENYA', 13, 34, '#ffd27a');
-    }
+    this.drawFuryEye(ctx, 7, 31);
+    bar(ctx, 19, 33, 54, this.fury / 100, this.fury >= 100 && this.t % 10 < 5 ? '#ffffff' : mix(VIOLET, GREEN, this.fury / 100));
     // the foe, top right
     const nm = foe.short;
     box(ctx, 82, 2, 76, 22);
@@ -546,7 +790,15 @@ export class Battle {
     if (foe.status.burn) tags.push('BRN');
     if (foe.status.daze) tags.push('DAZED');
     if (tags.length) { box(ctx, 82, 23, measure(tags.join(' ')) + 10, 12, { bg: C.bg2 }); text(ctx, tags.join(' '), 87, 26, C.red); }
-    if (me.status.burn) { box(ctx, 2, this.enyaHere ? 42 : 31, 26, 12, { bg: C.bg2 }); text(ctx, 'BRN', 7, (this.enyaHere ? 42 : 31) + 3, C.red); }
+    if (me.status.burn) { box(ctx, 2, 41, 26, 12, { bg: C.bg2 }); text(ctx, 'BRN', 7, 44, C.red); }
+  }
+  /* a little eye: violet, turning green as your FURY builds */
+  drawFuryEye(ctx, x, y) {
+    const iris = this.fury >= 100 && this.t % 10 < 5 ? '#c8ffb0' : mix(VIOLET, GREEN, this.fury / 100);
+    ctx.fillStyle = '#1a0f2e'; ctx.fillRect(x + 1, y, 7, 1); ctx.fillRect(x, y + 1, 9, 3); ctx.fillRect(x + 1, y + 4, 7, 1);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 1, y + 1, 7, 3);
+    ctx.fillStyle = iris; ctx.fillRect(x + 3, y + 1, 3, 3);
+    ctx.fillStyle = '#1a0f2e'; ctx.fillRect(x + 4, y + 2, 1, 1);
   }
   drawPrompt(ctx) {
     box(ctx, 2, 98, 88, 44);
@@ -599,6 +851,11 @@ export class Battle {
         break;
       }
       case 'beam': ctx.globalAlpha = 1 - p; ctx.fillStyle = '#ffffff'; ctx.fillRect(f.x - 2, 0, 4, f.y + 18); ctx.fillStyle = '#fff07a'; ctx.fillRect(f.x - 4, 0, 1, f.y + 18); ctx.fillRect(f.x + 3, 0, 1, f.y + 18); break;
+      case 'tbeam': {   // the tube's beam of light, reaching down for the creature
+        ctx.globalAlpha = 0.8 * (1 - p); ctx.fillStyle = '#e8fbff';
+        for (let y = f.y; y < f.y1; y++) { const w = Math.round(2 + (y - f.y) * 0.5); ctx.fillRect(f.x - w, y, w * 2, 1); }
+        break;
+      }
       case 'flame': { const c = ['#ffffff', '#ffd23a', '#ff6a00', '#e8102e', '#7a1fff']; ctx.globalAlpha = 1 - p * 0.5; ctx.fillStyle = c[Math.min(4, Math.floor(p * 5))]; ctx.fillRect(Math.round(f.x), Math.round(f.y), 2, 2); break; }
       case 'shot': {
         const x = f.x + (f.tx - f.x) * p, y = f.y + (f.ty - f.y) * p - Math.sin(p * Math.PI) * 4;
@@ -611,7 +868,7 @@ export class Battle {
       }
       case 'puff': { const r = 2 + p * 4; ctx.globalAlpha = 0.85 * (1 - p); ctx.fillStyle = f.col; ctx.fillRect(Math.round(f.x - r), Math.round(f.y - r / 2), Math.round(r * 2), Math.round(r)); ctx.fillRect(Math.round(f.x - r / 2), Math.round(f.y - r), Math.round(r), Math.round(r * 2)); break; }
       case 'ring': {
-        if (f.t < 0) break; const r = 4 + p * 20; ctx.fillStyle = f.col; ctx.globalAlpha = 1 - p;
+        const r = 4 + p * 20; ctx.fillStyle = f.col; ctx.globalAlpha = 1 - p;
         for (let a = 0; a < Math.PI * 2; a += 0.15) ctx.fillRect(Math.round(f.x + Math.cos(a) * r), Math.round(f.y + Math.sin(a) * r * 0.6), 1, 1);
         break;
       }
@@ -623,9 +880,55 @@ export class Battle {
       }
       case 'shine': ctx.globalAlpha = 1 - p; ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(f.x - 16 + p * 32), Math.round(f.y - 16), 2, 32); break;
       case 'clover': {
-        if (f.t < 0) break; ctx.globalAlpha = Math.min(1, (1 - p) * 2);
+        ctx.globalAlpha = Math.min(1, (1 - p) * 2);
         const x = Math.round(f.x + Math.sin(f.t / 6) * 2), y = Math.round(f.y);
         ctx.fillStyle = '#2fd85a'; ctx.fillRect(x, y, 2, 2); ctx.fillRect(x + 3, y, 2, 2); ctx.fillRect(x + 1, y + 2, 3, 2); ctx.fillStyle = '#1b7a33'; ctx.fillRect(x + 2, y + 4, 1, 2);
+        break;
+      }
+      case 'heart': {
+        ctx.globalAlpha = Math.min(1, (1 - p) * 2);
+        const hx = Math.round(f.x + Math.sin(f.t / 9) * 2), hy = Math.round(f.y);
+        ctx.fillStyle = '#e81617'; ctx.fillRect(hx, hy, 2, 2); ctx.fillRect(hx + 3, hy, 2, 2); ctx.fillRect(hx, hy + 1, 5, 2); ctx.fillRect(hx + 1, hy + 3, 3, 1); ctx.fillRect(hx + 2, hy + 4, 1, 1);
+        ctx.fillStyle = '#fdf6f6'; ctx.fillRect(hx, hy, 1, 1);
+        break;
+      }
+      case 'note': ctx.globalAlpha = Math.min(1, (1 - p) * 2); text(ctx, '♪', Math.round(f.x + Math.sin(f.t / 6) * 2), Math.round(f.y), f.col, { outline: '#1a0f2e' }); break;
+      case 'shard': {   // a splinter of diamond light, tumbling
+        ctx.globalAlpha = 1 - p; ctx.fillStyle = f.col;
+        const x = Math.round(f.x), y = Math.round(f.y);
+        if (f.t % 6 < 3) { ctx.fillRect(x, y, 2, 1); ctx.fillRect(x + 1, y + 1, 1, 1); } else { ctx.fillRect(x, y, 1, 2); ctx.fillRect(x + 1, y, 1, 1); }
+        break;
+      }
+      case 'crack': {   // the air cracking like glass round the foe
+        ctx.globalAlpha = 1 - p; ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < 9; i++) {
+          let x = f.x, y = f.y; const a = (i / 9) * Math.PI * 2 + hash(i, 0, f.seed) * 0.5, len = 10 + hash(i, 1, f.seed) * 16;
+          for (let k = 0; k < len; k++) { x += Math.cos(a + (hash(i, k, f.seed) - 0.5) * 0.9); y += Math.sin(a + (hash(i, k, f.seed) - 0.5) * 0.9); ctx.fillRect(Math.round(x), Math.round(y), 1, 1); }
+        }
+        break;
+      }
+      case 'rift': {   // a tear in the air, opening between worlds
+        const open = Math.min(1, f.t / 14) * (1 - Math.max(0, (f.t - 46) / 24));
+        for (let dy = -26; dy <= 26; dy++) {
+          const w = Math.max(0, Math.round(open * (5 - Math.abs(dy) / 6))) + (Math.random() < 0.3 ? 1 : 0);
+          const jx = Math.round(Math.sin(dy / 3 + f.t / 4) * 2);
+          ctx.globalAlpha = 0.9; ctx.fillStyle = '#8ff0ff'; ctx.fillRect(f.x - w - 1 + jx, f.y + dy, w * 2 + 2, 1);
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(f.x - w + jx, f.y + dy, w * 2, 1);
+        }
+        break;
+      }
+      case 'bolt': {   // your WARRIOR STRIKE: green lightning from where you stand
+        ctx.globalAlpha = 1 - p;
+        let x = f.x0, y = f.y0;
+        for (let i = 1; i <= 12; i++) {
+          const nx = f.x0 + (f.x1 - f.x0) * (i / 12) + (i < 12 ? rnd(-4, 4) : 0), ny = f.y0 + (f.y1 - f.y0) * (i / 12) + (i < 12 ? rnd(-5, 5) : 0);
+          const steps = Math.max(Math.abs(nx - x), Math.abs(ny - y));
+          for (let s = 0; s <= steps; s++) {
+            const px = Math.round(x + ((nx - x) * s) / (steps || 1)), py = Math.round(y + ((ny - y) * s) / (steps || 1));
+            ctx.fillStyle = GREEN; ctx.fillRect(px - 1, py, 3, 2); ctx.fillStyle = '#ffffff'; ctx.fillRect(px, py, 1, 1);
+          }
+          x = nx; y = ny;
+        }
         break;
       }
       case 'burst': {   // rays from Enya's necklace

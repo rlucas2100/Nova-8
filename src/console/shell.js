@@ -4,7 +4,7 @@
    colours, a backdrop, a sound switch and a big-screen button. */
 import { W, H } from '../engine/pixel.js';
 import { createInput, KEYS } from '../engine/input.js';
-import { unlockAudio, setSound, pauseAudio, setGamePaused, sfx } from '../engine/audio.js';
+import { unlockAudio, setSound, pauseAudio, setGamePaused, sfx, musicBeat } from '../engine/audio.js';
 import { Game, readJSON, writeJSON } from '../game/game.js';
 import { Boot } from './boot.js';
 
@@ -238,9 +238,17 @@ export function mountConsole(root) {
   fit();
 
   /* ---------- the loop ---------- */
-  let last = performance.now(), acc = 0;
+  let last = performance.now(), acc = 0, grooving = false;
   const STEP = 1000 / 60;
   const pressedBtns = { a: aBtn, b: bBtn, start: startBtn, select: selectBtn };
+  /* in the Shroom Groove the console's own speaker grille pumps along to the beat */
+  function groove() {
+    if (game.beatHud) {
+      const b = musicBeat(), k = b ? Math.max(0, 1 - (b.beat - Math.floor(b.beat)) * 2.4) : 0;
+      n8.style.setProperty('--beat', k.toFixed(2));
+      if (!grooving) { grooving = true; n8.classList.add('is-grooving'); }
+    } else if (grooving) { grooving = false; n8.classList.remove('is-grooving'); n8.style.removeProperty('--beat'); }
+  }
   function frame(now) {
     const dt = Math.min(100, now - last);
     last = now;
@@ -251,6 +259,7 @@ export function mountConsole(root) {
       if (n === 4) acc = 0;
       for (const [k, b] of Object.entries(pressedBtns)) b.classList.toggle('is-down', input.held[k]);
       dpad.dataset.dir = ['up', 'down', 'left', 'right'].find((d) => input.held[d]) || '';
+      groove();
       game.draw();
     } else if (!started) {
       game.draw();

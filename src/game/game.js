@@ -4,6 +4,7 @@
 import { W, H } from '../engine/pixel.js';
 import { Dialog, Menu, Toast, C } from './ui.js';
 import { playMusic, sfx } from '../engine/audio.js';
+import { movesAt } from './data.js';
 
 const SAVE_KEY = 'cosmic-castaways.save.v1';
 const SETTINGS_KEY = 'cosmic-castaways.settings.v1';
@@ -13,6 +14,28 @@ export function readJSON(key) {
 }
 export function writeJSON(key, v) {
   try { localStorage.setItem(key, JSON.stringify(v)); return true; } catch (e) { return false; }
+}
+
+/* bring an older save up to date: there's one hero now (no boy / girl choice), memories, COSMIC TUBES,
+   and companions know every move up to their level (NOVA's HEALING LICK is new) */
+export function migrate(st) {
+  if (!st || typeof st !== 'object') return null;
+  if ((st.v || 1) < 2) {
+    delete st.gender;
+    const f = st.flags || (st.flags = {}), mem = [];
+    if (f.awake) mem.push('fire');
+    if (st.pet) mem.push('name');
+    if (f.enya) mem.push('gem');
+    st.memories = mem;
+  }
+  st.memories = st.memories || [];
+  st.tubes = st.tubes || {};
+  st.captures = st.captures || 0;
+  st.bag = Object.assign({ berry: 0, tonic: 0, melon: 0, tube: 0 }, st.bag || {});
+  st.furyT = st.furyT || 0;
+  if (st.pet) st.pet.moves = movesAt(st.pet.species, st.pet.variant, st.pet.lv);
+  st.v = 2;
+  return st;
 }
 
 /* the screen palettes the SCREEN switch on the console flips between */
@@ -44,6 +67,7 @@ export class Game {
     this.settings = Object.assign({ textSpeed: 'normal', screen: 'colour' }, readJSON(SETTINGS_KEY) || {});
     this.state = null;
     this.paused = false;
+    this.beatHud = false;   // in the Shroom Groove: the console's speaker pumps along to the music
     this.lut = null;
     this.setScreen(this.settings.screen);
   }
@@ -83,6 +107,8 @@ export class Game {
     return i;
   }
   toast(str, colour = C.text) { this.toasts.push(new Toast(str, colour)); if (this.toasts.length > 3) this.toasts.shift(); }
+  /* someone said "Em" or "Gem": every scene that cares (the world, a battle) shows the tiger's hearts */
+  love() { for (const s of this.scenes) if (s.onLove) s.onLove(this); }
   shake(frames = 12, amt = 2) { this.shakeT = frames; this.shakeAmt = amt; }
   flash(colour = '#ffffff', frames = 10) { this.flashColour = colour; this.flashT = frames; this.flashMax = frames; }
   async fade(to, frames = 16, colour = '#000000') {
@@ -96,7 +122,7 @@ export class Game {
 
   /* ---------- save file ---------- */
   hasSave() { return !!readJSON(SAVE_KEY); }
-  load() { this.state = readJSON(SAVE_KEY); return this.state; }
+  load() { this.state = migrate(readJSON(SAVE_KEY)); return this.state; }
   save() { if (this.state) { this.state.savedAt = Date.now(); return writeJSON(SAVE_KEY, this.state); } return false; }
   deleteSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
   saveSettings() { writeJSON(SETTINGS_KEY, this.settings); }

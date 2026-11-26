@@ -13,20 +13,25 @@ import { GEM, COIN, DIAMOND, GEM_PAL, PART_ART, PART_PAL } from '../art/items.js
 const WHERE = {
   title: 'title screen', intro: 'the crash', town: 'Bloomhaven', town2: 'Bloomhaven, taking turns', select: 'choosing a companion',
   shop: "Mossa's stall", wilds: 'the Crimson Wilds', wilds2: 'the Wilds, taking turns', ride: 'riding your companion',
-  enya: 'Enya rides in', nest: 'near the scrap nest', battle: 'wild battles', battle2: 'wild battles', boss: 'the boss fight',
-  victory: 'after a win', chapter: 'end of Chapter 1',
+  enya: "Enya's echo rides in", nest: 'near the scrap nest', battle: 'wild battles', battle2: 'wild battles', boss: 'the boss fight',
+  victory: 'after a win', chapter: 'end of Chapter 1', jungle: 'the Whisperwood', jungle2: 'the Whisperwood, taking turns',
+  groove: 'the Shroom Groove', groove2: 'the Groove, taking turns', vision: 'visions beyond the veil', ghoul: 'ghoul battles',
 };
 const battler = (n) => ({ rows: BATTLERS[n].rows, pal: BATTLERS[n].pal });
 const ICONS = {
   coin: { rows: COIN, pal: GEM_PAL.gold }, emerald: { rows: GEM, pal: GEM_PAL.emerald }, sapphire: { rows: GEM, pal: GEM_PAL.sapphire },
   ruby: { rows: GEM, pal: GEM_PAL.ruby }, diamond: { rows: DIAMOND, pal: GEM_PAL.diamond },
-  jump: { rows: CH.KID.boy.down[1], pal: CH.KID_PAL.boy }, rawr: { rows: CH.TIGER.down[0], pal: CH.TIGER_PAL },
+  jump: { rows: CH.HERO.down[1], pal: CH.HERO_PAL }, rawr: { rows: CH.TIGER.down[0], pal: CH.TIGER_PAL },
   puff: { rows: CH.DRAGON.down[1], pal: CH.DRAGON_PAL.red }, blub: { rows: CH.OCTO.down[0], pal: CH.OCTO_PALS[2] },
   boing: { rows: CH.BLOOM.down[0], pal: CH.BLOOM_PALS.sun }, glorp: battler('glorp'), flitterfin: battler('flitterfin'),
   rustclaw: battler('rustclaw'), roar: { rows: CH.TIGER.side[1], pal: CH.TIGER_PAL }, claw: battler('tiger'),
   flame: battler('dragonRed'), frost: battler('dragonBlue'), hit: battler('thornback'), crit: battler('thornAlpha'),
   flash: { rows: CH.ENYA_TOP.down, pal: CH.ENYA_PAL }, heal: battler('octo'), levelup: { rows: CH.TIGER.down[1], pal: CH.TIGER_PAL },
   itemget: { rows: PART_ART.navcore, pal: PART_PAL }, joined: battler('enya'), encounter: battler('sporelet'), beam: { rows: CH.TIGER.down[0], pal: CH.TIGER_PAL }, ink: battler('octo'), wave: { rows: CH.OCTO.down[1], pal: CH.OCTO_PALS[4] }, crash: { rows: PART_ART.thruster, pal: PART_PAL }, save: { rows: CH.SPRIG.down[0], pal: CH.SPRIG_PAL },
+  purr: { rows: CH.TIGER.down[1], pal: CH.TIGER_PAL }, lick: { rows: CH.TIGER.side[0], pal: CH.TIGER_PAL }, fury: { rows: CH.HERO.down[0], pal: CH.HERO_PAL_FURY },
+  shatter: { rows: DIAMOND, pal: GEM_PAL.diamond }, rift: battler('enya'), memory: { rows: CH.HERO.down[0], pal: CH.HERO_PAL_SHIFT },
+  tube: { rows: CH.LUMEN, pal: CH.LUMEN_PAL }, lumoth: battler('lumoth'), jadehop: battler('jadehop'), ghoul: battler('ghoul'),
+  bopjelly: battler('bopjelly'), drumcap: battler('shroomboom'), scratch: { rows: CH.JELLY_DJ[0], pal: CH.JELLY_PALS.violet }, boom: battler('shroomboom'),
 };
 
 function el(tag, attrs = {}, kids = []) {

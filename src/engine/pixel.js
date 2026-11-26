@@ -43,6 +43,12 @@ export function spr(rows, pal, flip = false) {
   return c;
 }
 
+/* a filled circle in crisp pixels (canvas arcs would blur them) */
+export function disc(ctx, cx, cy, r, col) {
+  ctx.fillStyle = col;
+  for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r * r - dy * dy + r * 0.8)); ctx.fillRect(cx - w, cy + dy, w * 2 + 1, 1); }
+}
+
 /* Multi-line art written as a template string: one row per line, spaces trimmed. */
 export function art(str) {
   return str.split('\n').map((s) => s.trim()).filter((s) => s.length);

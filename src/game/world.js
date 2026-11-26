@@ -1,14 +1,17 @@
-/* The overworld: walking tile by tile, your companion and Enya following (or carrying you), people to
-   talk to, jewels to pick up, glowgrass where wild creatures hide, and doors to the next area. */
-import { W, H, spr } from '../engine/pixel.js';
+/* The overworld: walking tile by tile, your companion and Enya's echo following (or carrying you), people
+   to talk to, jewels to pick up, glowgrass and ferns where wild creatures hide, and doors to the next area.
+   Also: your eyes (violet, flickering green, blazing green when your warrior blood is up), NOVA's hearts,
+   the headaches from the crash (NOVA licks them better), and the Shroom Groove, where everything bops
+   along to the music: the dance floor, the giant mushrooms, the speakers and the boombox in the corner. */
+import { W, H, spr, disc } from '../engine/pixel.js';
 import { paintMap, buildProps, TILE } from '../art/tiles.js';
 import { MAPS } from './maps.js';
 import * as CH from '../art/chars.js';
 import { BATTLERS } from '../art/battlers.js';
-import { JEWELS, PARTS, WILD, newWild, companionStats, MAX_EN } from './data.js';
+import { JEWELS, newWild, companionStats, MAX_EN, enyaWith } from './data.js';
 import { text, measure } from '../engine/font.js';
 import { box, C } from './ui.js';
-import { sfx, playMusic } from '../engine/audio.js';
+import { sfx, playMusic, musicBeat } from '../engine/audio.js';
 import { SCRIPTS } from './story.js';
 import { Battle } from './battle.js';
 import { GEM, COIN, COIN_EDGE, DIAMOND, GEM_PAL, PART_ART, PART_PAL } from '../art/items.js';
@@ -21,6 +24,15 @@ const OPP = { up: 'down', down: 'up', left: 'right', right: 'left' };
 const rnd = (a, b) => a + Math.random() * (b - a);
 
 const BUBBLE = { K: '#1a0f2e', W: '#ffffff', R: '#e8102e', P: '#ff3a5a' };
+const NOTE_COLS = ['#ff8ad8', '#5ff2ff', '#ffd23a', '#7dff9a', '#c08cff'];
+const noteCol = (i) => NOTE_COLS[((i % 5) + 5) % 5];
+/* what drifts up out of the fog in your head now and then */
+const THROBS = ['...Em...?', '...a diamond, shining...', '...sirens... fire...', '...stars... a hill...', '...Gem...?', '...I promised...'];
+
+function ring(ctx, cx, cy, r, col) {
+  ctx.fillStyle = col;
+  for (let i = 0; i < 24; i++) { const a = (i / 24) * Math.PI * 2; ctx.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), 1, 1); }
+}
 
 export class World {
   constructor(game, mapId, x, y, dir) {
@@ -31,6 +43,10 @@ export class World {
     this.busy = 0;
     this.particles = [];
     this.emotes = [];
+    this.daze = 0;          // double vision from the crash
+    this.gateGlow = 0;      // the Veil Gate, opened for a moment
+    this.pulse = 0;         // the music's beat, 1 on the beat falling to 0
+    this.beatN = 0;
     this.load(mapId, x, y, dir);
   }
 
@@ -51,14 +67,10 @@ export class World {
     });
     if (st.flags['gate-open']) { const d = this.npc('drone'); if (d) { d.x = 23; d.y = 10; d.px = d.x * 16; d.py = d.y * 16; d.dir = 'down'; } }
     if (st.flags['sprig-grove']) { const s = this.npc('sprig'); if (s) { s.x = 15; s.y = 5; s.px = 240; s.py = 80; } }
-    this.props = m.props.map((p) => ({ ...p, def: PROPS[p.t] }));
+    this.props = m.props.filter((p) => !(p.flag && st.flags[p.flag])).map((p) => ({ ...p, def: PROPS[p.t] }));
     this.jewels = (m.jewels || []).filter((j) => !st.got[j.id]);
     this.parts = (m.parts || []).filter((p) => !st.parts[p.id]);
-    this.blockGrid = new Uint8Array(this.mw * this.mh);
-    for (const p of this.props) {
-      const d = p.def;
-      for (let j = 0; j < d.h; j++) for (let i = 0; i < d.w; i++) this.blockGrid[(p.y + j) * this.mw + p.x + i] = 1;
-    }
+    this.buildBlockGrid();
     // never start inside something solid (a save from before a prop moved)
     if (this.solidTile(x, y) || this.npcAt(x, y)) {
       let best = null;
@@ -69,25 +81,38 @@ export class World {
     }
     this.buildFollowers();
     this.particles = [];
+    this.bgFx = [];
+    this.hudNotes = [];
+    this.gateGlow = 0;
+    this.camShift = { x: 0, y: 0 };   // a script can nudge the camera to frame something
+    this.game.beatHud = !!m.boombox;   // the console's speaker grille pumps along in the Shroom Groove
     this.banner = { str: m.name.toUpperCase(), t: 0 };
     this.updateMusic();
   }
+  buildBlockGrid() {
+    this.blockGrid = new Uint8Array(this.mw * this.mh);
+    for (const p of this.props) {
+      const d = p.def;
+      for (let j = 0; j < d.h; j++) for (let i = 0; i < d.w; i++) this.blockGrid[(p.y + j) * this.mw + p.x + i] = 1;
+    }
+  }
+  removeProp(id) { this.props = this.props.filter((q) => q.id !== id); this.buildBlockGrid(); }
 
   /* the tune for where you are: a zone's own (the scrap nest), riding, or the area's backing tracks */
   musicHere() {
     const p = this.player, z = (this.map.zones || []).find((q) => p.x >= q.x && p.x < q.x + q.w && p.y >= q.y && p.y < q.y + q.h);
     if (z) return z.music;
-    if (this.st.riding && this.st.pet) return 'ride';
+    if (this.st.riding && this.st.pet && !this.map.boombox) return 'ride';   // in the Groove, the groove wins
     return this.map.music;
   }
   updateMusic() { playMusic(this.musicHere()); }
 
-  /* your companion walks behind you (or carries you), then Enya on the Emerald Tiger */
+  /* your companion walks behind you (or carries you), then Enya's echo on the Emerald Tiger */
   buildFollowers() {
     const st = this.st, p = this.player;
     this.followers = [];
     if (st.pet && !st.riding) this.followers.push({ id: 'pet', kind: 'pet' });
-    if (st.flags.enya) this.followers.push({ id: 'enya', kind: 'enya' });
+    if (enyaWith(st)) this.followers.push({ id: 'enya', kind: 'enya' });
     const [dx, dy] = DIRS[OPP[p.dir]];
     let bx = p.x, by = p.y;
     this.followers.forEach((f, i) => {
@@ -143,7 +168,7 @@ export class World {
   }
   /* animation that keeps running under dialogue boxes and menus */
   tick(g) {
-    const p = this.player, speed = this.st.riding ? 2 : 1;
+    const p = this.player, st = this.st, speed = st.riding ? 2 : 1;
     this.stepEntity(p, speed, () => this.onStep());
     for (const f of this.followers) this.stepEntity(f, speed);
     for (const n of this.npcs) {
@@ -166,19 +191,58 @@ export class World {
       for (const q of due) q.fn();
     }
     this.banner.t++;
+    if (this.daze > 0) this.daze--;
+    if (st.furyT > 0) st.furyT--;
+    this.beatTick(g);
     if (this.map.id === 'bloomhaven') this.podFx(g.t);
-    // particles: smoke from the crashed ship, drifting pollen, sparkles
-    const t = g.t;
-    if (this.map.id === 'bloomhaven' && !this.st.flags.chapter1 && t % 9 === 0) {
+    const t = g.t, idle = g.top === this && !this.busy && !this.leaving;
+    // NOVA can't help himself: little hearts now and then
+    if (idle && st.pet && st.pet.species === 'tiger' && Math.random() < 1 / 1500) { if (this.tigerHearts(3)) sfx.purr(); }
+    // the bump on your head from the crash still throbs sometimes, until Chapter 1 is over
+    if (this.throbT === undefined) this.throbT = 3000 + Math.random() * 3000;
+    if (idle && st.pet && !st.flags.chapter1 && --this.throbT <= 0) { this.throbT = 8000 + Math.random() * 6000; this.throb(g); }
+    // your eyes glow green for a while after your warrior blood boils
+    if (st.furyT > 0 && t % 12 === 0) this.particles.push({ x: p.px + 4 + rnd(0, 8), y: p.py + rnd(-2, 4), vx: rnd(-0.2, 0.2), vy: -rnd(0.3, 0.6), life: 24, age: 0, kind: 'spark', col: t % 24 ? '#5dff3a' : '#c8ffb0' });
+    // Enya is only an echo: diamond light glitters round her
+    const en = this.followers.find((f) => f.kind === 'enya');
+    if (en && t % 23 === 0) this.particles.push({ x: en.px + 4 + rnd(0, 8), y: en.py - 6 + rnd(0, 12), vx: 0, vy: -0.2, life: 26, age: 0, kind: 'spark', col: t % 46 ? '#ffffff' : '#c8f4ff' });
+    // particles: smoke from the crashed ship, drifting pollen, fireflies, spores, sparkles
+    if (this.map.id === 'bloomhaven' && !st.flags.chapter1 && t % 9 === 0) {
       this.particles.push({ x: 3 * 16 + 30 + rnd(-4, 4), y: 3 * 16 + 4, vx: rnd(-0.1, 0.25), vy: -rnd(0.25, 0.45), life: 90, age: 0, kind: 'smoke' });
     }
     if (t % 14 === 0) {
       const cx = this.camX || 0, cy = this.camY || 0;
-      this.particles.push({ x: cx + rnd(0, W), y: cy + rnd(0, H), vx: rnd(-0.15, 0.15), vy: rnd(-0.2, -0.05), life: 160, age: 0, kind: this.map.id === 'wilds' ? 'spore' : 'petal' });
+      const kind = { wilds: 'spore', jungle: t % 28 ? 'firefly' : 'jleaf', groove: 'gspore' }[this.map.id] || 'petal';
+      this.particles.push({ x: cx + rnd(0, W), y: cy + rnd(0, H), vx: rnd(-0.15, 0.15), vy: kind === 'jleaf' ? rnd(0.15, 0.3) : rnd(-0.2, -0.05), life: kind === 'firefly' ? 220 : 160, age: 0, kind, seed: Math.floor(rnd(0, 40)) });
     }
-    for (const q of this.particles) { q.age++; q.x += q.vx; q.y += q.vy; }
+    for (const q of this.particles) {
+      q.age++; q.x += q.vx; q.y += q.vy;
+      if (q.kind === 'firefly') { q.vx = Math.max(-0.3, Math.min(0.3, q.vx + rnd(-0.03, 0.03))); q.vy = Math.max(-0.3, Math.min(0.3, q.vy + rnd(-0.03, 0.03))); }
+      else if (q.kind === 'leaf' || q.kind === 'shard') q.vy += 0.07;
+    }
     this.particles = this.particles.filter((q) => q.age < q.life);
     this.emotes = this.emotes.filter((e) => ++e.t < e.life);
+    // big pale jellies drifting up through the Groove's sky, far away
+    if (this.map.boombox) {
+      if (t % 170 === 0) this.bgFx.push({ x: (this.camX || 0) + rnd(10, W - 10), y: (this.camY || 0) + H + 30, vy: -rnd(0.12, 0.25), s: Math.floor(rnd(6, 11)), age: 0, c: NOTE_COLS[Math.floor(rnd(0, 5))] });
+      for (const q of this.bgFx) { q.y += q.vy; q.age++; }
+      this.bgFx = this.bgFx.filter((q) => q.age < 2000 && q.y > (this.camY || 0) - 60);
+      for (const n of this.hudNotes) { n.t++; n.x += n.vx; n.y += n.vy; }
+      this.hudNotes = this.hudNotes.filter((n) => n.t < n.life);
+    }
+  }
+  /* follow the music's beat (or a steady 104 a minute when there's no sound) */
+  beatTick(g) {
+    const b = musicBeat(), beat = b ? b.beat : g.t / 34.6, n = Math.floor(beat);
+    this.pulse = Math.max(0, 1 - (beat - n) * 2.4);
+    if (n === this.beatN) return;
+    this.beatN = n;
+    if (!this.map.boombox) return;
+    // the boombox in the corner pops out a note on every beat...
+    this.hudNotes.push({ x: W - 17 + rnd(-4, 4), y: 6, vx: rnd(-0.55, -0.1), vy: -rnd(0.3, 0.55), t: 0, life: 64, col: noteCol(n) });
+    // ...and DJ JIGGLE's big one on every other beat
+    const bb = this.props.find((q) => q.t === 'boombox');
+    if (bb && n % 2 === 0) this.particles.push({ x: bb.x * 16 + 20 + rnd(-10, 10), y: bb.y * 16 - 14, vx: rnd(-0.4, 0.4), vy: -rnd(0.4, 0.7), life: 70, age: 0, kind: 'note', col: noteCol(n >> 1) });
   }
 
   stepEntity(e, speed, done) {
@@ -251,11 +315,12 @@ export class World {
       if (st.flags[tr.id]) continue;
       if (p.x >= tr.x && p.x < tr.x + tr.w && p.y >= tr.y && p.y < tr.y + tr.h && SCRIPTS[tr.script]) { this.run(SCRIPTS[tr.script], tr); return; }
     }
-    // wild creatures in the glowgrass (it rustles as you push through)
+    // wild creatures in the glowgrass, ferns and mushroom patches (they rustle as you push through)
     const t = TILE[this.tile(p.x, p.y)] || {};
     if (t.encounter) {
       sfx.rustle();
-      for (let i = 0; i < 4; i++) this.particles.push({ x: p.px + 4 + rnd(0, 8), y: p.py + 10, vx: rnd(-0.5, 0.5), vy: -rnd(0.4, 0.9), life: 16, age: 0, kind: 'leaf' });
+      const leaf = { jungle: 'jleaf', groove: 'gspore' }[this.map.id] || 'leaf';
+      for (let i = 0; i < 4; i++) this.particles.push({ x: p.px + 4 + rnd(0, 8), y: p.py + 10, vx: rnd(-0.5, 0.5), vy: -rnd(0.4, 0.9), life: 16, age: 0, kind: leaf });
     }
     this.updateMusic();
     if (t.encounter && st.pet && p.sinceBattle > 3 && Math.random() < 0.11) {
@@ -268,10 +333,13 @@ export class World {
 
   interact() {
     const p = this.player, [dx, dy] = DIRS[p.dir], fx = p.x + dx, fy = p.y + dy;
+    // your own party: pet your companion, or talk to Enya
+    const fol = this.followers.find((f) => f.x === fx && f.y === fy && !f.moving);
+    if (fol) { fol.dir = OPP[p.dir]; this.run(fol.kind === 'pet' ? SCRIPTS.petTalk : SCRIPTS.enyaTalk, fol); return; }
     const n = this.npcAt(fx, fy);
     if (n) {
       if (!n.big && !n.hover) n.dir = OPP[p.dir];
-      if (n.art === 'bloom') { n.hopT = n.hopMax = 12; n.hopH = 4; sfx.boing(); }
+      if (n.art === 'bloom' || n.art === 'jelly') { n.hopT = n.hopMax = 12; n.hopH = 4; sfx.boing(); }
       if (SCRIPTS[n.talk]) this.run(SCRIPTS[n.talk], n);
       return;
     }
@@ -282,7 +350,8 @@ export class World {
     }
     const t = TILE[this.tile(fx, fy)] || {};
     if (t.water && !t.void) this.run(async (g) => { await g.say(this.tile(fx, fy) === 'a' ? 'Glowing algae sway in the water. A tiny jelly blinks at you.' : 'The river glows a soft, bright green.'); });
-    else if (t.void) this.run(async (g) => { await g.say('The land ends here. Below, the purple sky goes on forever...'); });
+    else if (t.void) this.run(async (g) => { await g.say(this.map.id === 'groove' ? 'Purple sky in every direction. Far below, giant jellies drift by like slow balloons.' : 'The land ends here. Below, the purple sky goes on forever...'); });
+    else if (t.name === 'canopy') this.run(async (g) => { await g.say('Giant trees, packed tight. Somewhere in the leaves, something whispers your name...'); });
   }
 
   toggleRide() {
@@ -321,7 +390,7 @@ export class World {
       for (let i = 0; i < 12; i++) this.particles.push({ x: x + rnd(-7, 7), y: y + rnd(2, 10), vx: rnd(-0.12, 0.12), vy: -rnd(0.4, 0.9), life: 26, age: 0, kind: 'flame' });
     } else if (species === 'dragon') {
       const blue = this.st.pet && this.st.pet.variant === 'blue', [dx] = DIRS[e.dir];
-      const fx = dx || (e.dir === 'up' ? 0 : 0);
+      const fx = dx || 0;
       for (let i = 0; i < 12; i++) this.particles.push({ x: x + fx * 7, y: y + 2, vx: fx * rnd(0.5, 1.3) + rnd(-0.3, 0.3), vy: rnd(-0.6, 0.1) - (fx ? 0 : 0.4), life: 26, age: 0, kind: blue ? 'frost' : 'flame' });
       this.particles.push({ x, y: y - 4, vx: 0, vy: -0.4, life: 40, age: 0, kind: 'ring', col: blue ? '#c8f4ff' : '#9a8aa8' });
     } else {
@@ -331,6 +400,58 @@ export class World {
   after(frames, fn) { (this.timers || (this.timers = [])).push({ t: frames, fn }); }
   hopY(e) { return e && e.hopT > 0 ? -Math.round(Math.sin((1 - e.hopT / e.hopMax) * Math.PI) * (e.hopH || 6)) : 0; }
   wigX(e) { return e && e.wiggleT > 0 ? ((e.wiggleT >> 1) % 2 ? 1 : -1) : 0; }
+
+  /* ---------- NOVA's hearts, and the bump on your head ---------- */
+  tigerEntity() { const st = this.st; if (!st.pet || st.pet.species !== 'tiger') return null; return st.riding ? this.player : this.followers.find((f) => f.kind === 'pet'); }
+  tigerHearts(n = 4) { const e = this.tigerEntity(); if (!e) return false; this.hearts(e.px + 8, e.py - 4, n); return true; }
+  /* someone said "Em" or "Gem" */
+  onLove(g) {
+    if (g.t - (this.loveT ?? -999) < 45) return;
+    this.loveT = g.t;
+    let any = false;
+    if (this.tigerHearts(6)) { this.emote(this.st.riding ? 'player' : 'pet', '♥', 60); any = true; }
+    const en = this.followers.find((f) => f.kind === 'enya');
+    if (en) { this.hearts(en.px + 8, en.py - 8, 3); any = true; }   // the Emerald Tiger's a softie too
+    if (any) sfx.purr();
+  }
+  throb(g) {
+    const st = this.st, frag = THROBS[(st.throbN = ((st.throbN || 0) + 1)) % THROBS.length];
+    this.daze = Math.max(this.daze, 90);
+    sfx.heartbeat();
+    g.toast(frag, '#cdb8ff');
+    if (/\b(em|gem)\b/i.test(frag)) this.onLove(g);
+    if (st.pet.species === 'tiger') {
+      this.after(50, () => {
+        if (!this.tigerHearts(4)) return;
+        sfx.lick();
+        g.toast(st.pet.name + ' licks you. Ahh, better!', '#ffb0f0');
+        this.daze = Math.min(this.daze, 12);
+      });
+    }
+  }
+  /* your eyes: violet with a flicker of green now and then, blazing green while your blood is up */
+  heroPal(t) { return this.st.furyT > 0 ? CH.HERO_PAL_FURY : t % 240 < 14 ? CH.HERO_PAL_SHIFT : CH.HERO_PAL; }
+
+  /* the Shroom Groove: everyone dances on the beat */
+  async dance(beats = 8) {
+    const g = this.game, p = this.player, st = this.st;
+    for (let i = 0; i < beats; i++) {
+      const was = this.beatN;
+      await g.until(() => this.beatN !== was);
+      p.dir = ['down', 'left', 'down', 'right'][i % 4];
+      p.hopT = p.hopMax = 14; p.hopH = 5;
+      const pet = st.riding ? p : this.followers.find((f) => f.kind === 'pet');
+      if (st.pet && i % 4 === 3) this.wiggle(pet, st.pet.species);
+      else if (pet && pet !== p) { pet.hopT = pet.hopMax = 12; pet.hopH = 4; }
+      const en = this.followers.find((f) => f.kind === 'enya');
+      if (en && i % 2 === 0) { en.hopT = en.hopMax = 12; en.hopH = 4; }
+      for (const n of this.npcs) if (n.art === 'jelly') { n.hopT = n.hopMax = 12; n.hopH = 3; }
+      g.flash(NOTE_COLS[i % 5], 6);
+      this.sparkle(p.px + 8, p.py, 6, NOTE_COLS);
+      for (let k = 0; k < 2; k++) this.particles.push({ x: p.px + 8 + rnd(-8, 8), y: p.py - 6, vx: rnd(-0.4, 0.4), vy: -rnd(0.4, 0.8), life: 60, age: 0, kind: 'note', col: NOTE_COLS[(i + k) % 5] });
+    }
+    p.dir = 'down';
+  }
 
   /* the guardians' pods in the grove: each one shows what's inside */
   podFx(t) {
@@ -380,6 +501,10 @@ export class World {
   sparkle(x, y, n = 8, cols = ['#ffffff', '#ffd23a', '#8ff0ff']) {
     for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, s = rnd(0.4, 1.4); this.particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.3, life: 30, age: 0, kind: 'spark', col: cols[i % cols.length] }); }
   }
+  /* diamond light shattering: bright shards flying out and falling */
+  shatter(x, y, n = 24) {
+    for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, s = rnd(0.6, 2.2); this.particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.8, life: 40, age: 0, kind: 'shard', col: ['#ffffff', '#c8f4ff', '#8ff0ff', '#ffd23a'][i % 4] }); }
+  }
   hearts(x, y, n = 5) {
     for (let i = 0; i < n; i++) this.particles.push({ x: x + rnd(-6, 6), y: y - i * 3, vx: rnd(-0.15, 0.15), vy: -rnd(0.3, 0.55), life: 70 + i * 6, age: -i * 8, kind: 'heart' });
   }
@@ -425,9 +550,9 @@ export class World {
       this.heal();
       g.save();
       await g.fade(0, 20);
-      await g.say('You hurried back to safety. ' + this.st.pet.name + ' rested and feels much better!');
+      await SCRIPTS.revive(g, this);
     } else {
-      playMusic(this.map.music);
+      this.updateMusic();
       g.save();
     }
     return result;
@@ -436,12 +561,14 @@ export class World {
   /* ---------- drawing ---------- */
   draw(ctx, g) {
     const p = this.player;
-    const camX = Math.max(0, Math.min(this.mw * 16 - W, Math.round(p.px + 8 - W / 2)));
-    const camY = Math.max(0, Math.min(this.mh * 16 - H, Math.round(p.py + 8 - H / 2)));
+    const cs = this.camShift || { x: 0, y: 0 };
+    const camX = Math.max(0, Math.min(this.mw * 16 - W, Math.round(p.px + 8 - W / 2 + cs.x)));
+    const camY = Math.max(0, Math.min(this.mh * 16 - H, Math.round(p.py + 8 - H / 2 + cs.y)));
     this.camX = camX; this.camY = camY;
     const f = Math.floor(g.t / 18) % 4;
     ctx.drawImage(this.frames[f], camX, camY, W, H, 0, 0, W, H);
     ctx.translate(-camX, -camY);
+    this.drawGroove(ctx);
     const items = [];
     for (const pr of this.props) {
       const d = pr.def, img = d.img[d.anim ? Math.floor(g.t / d.anim) % d.img.length : (pr.open ? 1 : 0)] || d.img[0];
@@ -453,7 +580,13 @@ export class World {
       const opened = pr.id && this.st.flags['open-' + pr.id];
       const im = opened && d.img[1] ? d.img[1] : img;
       const pod = pr.id && pr.id.startsWith('pod-') && !opened;
-      items.push({ z: (pr.y + d.h) * 16 - 1, draw: () => { ctx.drawImage(im, x, y); if (pod) this.drawPodGuest(ctx, pr, x, y, g.t); } });
+      items.push({ z: (pr.y + d.h) * 16 - 1, draw: () => {
+        if (d.gate) this.drawVeil(ctx, x, y, g.t);
+        ctx.drawImage(im, x, y);
+        if (pod) this.drawPodGuest(ctx, pr, x, y, g.t);
+        if (d.glow) { ctx.globalAlpha = 0.2 + 0.8 * this.pulse; ctx.drawImage(d.glow, x, y); ctx.globalAlpha = 1; }
+        if (d.cones) for (const [cx, cy, r] of d.cones) this.drawCone(ctx, x + cx, y + cy, r);
+      } });
     }
     for (const j of this.jewels) {
       if (!this.onScreen(j.x * 16, j.y * 16, 16, 16)) continue;
@@ -482,11 +615,22 @@ export class World {
       const a = 1 - q.age / q.life;
       if (q.kind === 'smoke') { ctx.globalAlpha = a * 0.55; ctx.fillStyle = q.age < 20 ? '#8a7aa0' : '#5a4e6e'; const s = 2 + Math.floor(q.age / 30); ctx.fillRect(Math.round(q.x), Math.round(q.y), s, s); }
       else if (q.kind === 'spore') { ctx.globalAlpha = Math.min(1, a * 1.5) * 0.8; ctx.fillStyle = (q.age >> 4) % 2 ? '#8ff0ff' : '#c49cff'; ctx.fillRect(Math.round(q.x), Math.round(q.y + Math.sin(q.age / 15) * 2), 1, 1); }
+      else if (q.kind === 'gspore') { ctx.globalAlpha = Math.min(1, a * 1.5) * 0.85; ctx.fillStyle = ['#ff8ad8', '#8ff0ff', '#ffd23a'][(q.seed + (q.age >> 4)) % 3]; ctx.fillRect(Math.round(q.x + Math.sin(q.age / 13) * 2), Math.round(q.y), 1, 1); }
       else if (q.kind === 'petal') { ctx.globalAlpha = Math.min(1, a * 1.5) * 0.8; ctx.fillStyle = (q.age >> 5) % 2 ? '#ffd27a' : '#ffffff'; ctx.fillRect(Math.round(q.x + Math.sin(q.age / 12) * 3), Math.round(q.y), 1, 1); }
+      else if (q.kind === 'firefly') {
+        if ((q.age + q.seed) % 44 < 28) {
+          const fx = Math.round(q.x), fy = Math.round(q.y);
+          ctx.globalAlpha = Math.min(1, a * 2) * 0.3; ctx.fillStyle = '#d8ff7a'; ctx.fillRect(fx - 1, fy - 1, 3, 3);
+          ctx.globalAlpha = Math.min(1, a * 2); ctx.fillStyle = '#f6ffc0'; ctx.fillRect(fx, fy, 1, 1);
+        }
+      }
+      else if (q.kind === 'jleaf') { ctx.globalAlpha = Math.min(1, a * 1.5); ctx.fillStyle = (q.seed % 3) ? '#5fb070' : '#d8a040'; ctx.fillRect(Math.round(q.x + Math.sin(q.age / 10) * 3), Math.round(q.y), 2, 1); }
       else if (q.kind === 'spark') { ctx.globalAlpha = a; ctx.fillStyle = q.col; ctx.fillRect(Math.round(q.x), Math.round(q.y), 1, 1); }
+      else if (q.kind === 'shard') { ctx.globalAlpha = a; ctx.fillStyle = q.col; ctx.fillRect(Math.round(q.x), Math.round(q.y), q.age % 6 < 3 ? 2 : 1, q.age % 6 < 3 ? 1 : 2); }
+      else if (q.kind === 'note') { ctx.globalAlpha = Math.min(1, a * 2); text(ctx, '♪', Math.round(q.x + Math.sin(q.age / 8) * 2), Math.round(q.y), q.col); }
       else if (q.kind === 'flame') { const k = q.age / q.life; ctx.fillStyle = k < 0.2 ? '#fff6c8' : k < 0.45 ? '#ffd23a' : k < 0.7 ? '#ff7a1a' : k < 0.88 ? '#e8302a' : '#7a1fff'; ctx.fillRect(Math.round(q.x), Math.round(q.y), k < 0.5 ? 2 : 1, k < 0.5 ? 2 : 1); }
       else if (q.kind === 'frost') { const k = q.age / q.life; ctx.globalAlpha = 1 - k * 0.6; ctx.fillStyle = k < 0.3 ? '#ffffff' : k < 0.65 ? '#c8f4ff' : '#5fa8ff'; ctx.fillRect(Math.round(q.x), Math.round(q.y), 1, 1); if (k < 0.3) { ctx.fillRect(Math.round(q.x) - 1, Math.round(q.y), 3, 1); ctx.fillRect(Math.round(q.x), Math.round(q.y) - 1, 1, 3); } }
-      else if (q.kind === 'leaf') { ctx.globalAlpha = a; ctx.fillStyle = (q.age >> 2) % 2 ? '#c49cff' : '#8a50e4'; ctx.fillRect(Math.round(q.x), Math.round(q.y), 1, 2); q.vy += 0.08; }
+      else if (q.kind === 'leaf') { ctx.globalAlpha = a; ctx.fillStyle = (q.age >> 2) % 2 ? '#c49cff' : '#8a50e4'; ctx.fillRect(Math.round(q.x), Math.round(q.y), 1, 2); }
       else if (q.kind === 'ring' || q.kind === 'glowring') {
         const k = q.age / q.life, r = q.kind === 'ring' ? 2 + k * 6 : 6 + k * 10;
         ctx.globalAlpha = (1 - k) * 0.9; ctx.fillStyle = q.kind === 'ring' ? (q.col || '#c8c0d8') : (Math.floor(q.age / 6) % 2 ? '#8ff0ff' : '#c08cff');
@@ -541,6 +685,17 @@ export class World {
       box(ctx, 4, Math.round(y), w, 15, { bg: C.bg2 });
       text(ctx, this.banner.str, 12, Math.round(y) + 4, C.gold);
     }
+    if (this.map.boombox) this.drawBoombox(ctx);
+    // double vision from the bump on your head
+    if (this.daze > 0) {
+      const k = Math.min(1, this.daze / 60), off = Math.max(1, Math.round(Math.abs(Math.sin(g.t / 7)) * 3 * k));
+      ctx.globalAlpha = 0.3 * k;
+      ctx.drawImage(g.canvas, off, 0);
+      ctx.drawImage(g.canvas, -off, Math.round(Math.cos(g.t / 9) * k));
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(40,10,70,' + (0.35 * k).toFixed(2) + ')';
+      ctx.fillRect(0, 0, W, 5); ctx.fillRect(0, H - 5, W, 5); ctx.fillRect(0, 5, 5, H - 10); ctx.fillRect(W - 5, 5, 5, H - 10);
+    }
     // the battle wipe
     if (this.wipe > 0) {
       ctx.fillStyle = '#000';
@@ -552,6 +707,72 @@ export class World {
     }
   }
   onScreen(x, y, w, h) { return x + w > this.camX && x < this.camX + W && y + h > this.camY && y < this.camY + H; }
+
+  /* the Groove's sky jellies and its dance floor, lit up on the beat (under everything else) */
+  drawGroove(ctx) {
+    for (const q of this.bgFx) {
+      const s = q.s, x = Math.round(q.x), y = Math.round(q.y);
+      ctx.globalAlpha = 0.14;
+      ctx.fillStyle = q.c;
+      for (let dy = -s; dy <= 0; dy++) { const w = Math.floor(Math.sqrt(s * s - dy * dy)); ctx.fillRect(x - w, y + dy, w * 2 + 1, 1); }
+      for (let k = 0; k < 3; k++) for (let l = 1; l < s * 1.6; l++) ctx.fillRect(x - Math.round(s / 2) + Math.round(k * s / 2) + Math.round(Math.sin((l + q.age / 4 + k * 3) / 4)), y + l, 1, 1);
+      ctx.globalAlpha = 1;
+    }
+    const df = this.map.dancefloor;
+    if (!df) return;
+    const k = this.pulse, b = this.beatN;
+    for (let j = 0; j < df.h; j++) for (let i = 0; i < df.w; i++) {
+      const px = (df.x + i) * 16, py = (df.y + j) * 16;
+      if (!this.onScreen(px, py, 16, 16)) continue;
+      const lit = (i + j * 2 + b) % 3 === 0;
+      ctx.globalAlpha = lit ? 0.3 + 0.45 * k : 0.12;
+      ctx.fillStyle = noteCol(i + j + b);
+      ctx.fillRect(px + 1, py + 1, 14, 14);
+    }
+    ctx.globalAlpha = 1;
+  }
+  /* a speaker cone, pumping on the beat */
+  drawCone(ctx, cx, cy, r) {
+    const k = this.pulse;
+    disc(ctx, cx, cy, r, '#24243e');
+    disc(ctx, cx, cy, Math.max(1, Math.round(r * (0.5 + 0.45 * k))), k > 0.5 ? '#8a7ab8' : '#4a4a70');
+    disc(ctx, cx, cy, Math.max(0, Math.round(r * 0.28)), '#c8ccdc');
+    if (k > 0.6) { ctx.globalAlpha = (k - 0.6) * 2; ring(ctx, cx, cy, r + 1, '#ff8ad8'); ctx.globalAlpha = 1; }
+  }
+  /* the boombox in the corner of the screen: it pumps and pops out notes on the beat */
+  drawBoombox(ctx) {
+    const k = this.pulse, x = W - 29, y = 3 - (k > 0.7 ? 1 : 0);
+    for (const n of this.hudNotes) { ctx.globalAlpha = Math.min(1, (1 - n.t / n.life) * 2); text(ctx, '♪', Math.round(n.x + Math.sin(n.t / 7) * 2), Math.round(n.y), n.col, { outline: '#1a0f2e' }); }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#1a0f2e'; ctx.fillRect(x - 1, y + 3, 28, 16); ctx.fillRect(x + 6, y - 1, 14, 5);
+    ctx.fillStyle = '#c8ccdc'; ctx.fillRect(x + 7, y, 12, 1); ctx.fillRect(x + 7, y + 1, 1, 3); ctx.fillRect(x + 18, y + 1, 1, 3);
+    ctx.fillStyle = '#3a3a5a'; ctx.fillRect(x, y + 4, 26, 14);
+    ctx.fillStyle = '#6a6a90'; ctx.fillRect(x, y + 4, 26, 1);
+    for (const cx of [x + 6, x + 19]) this.drawCone(ctx, cx, y + 11, 4);
+    ctx.fillStyle = '#14142a'; ctx.fillRect(x + 11, y + 7, 4, 5);
+    ctx.fillStyle = k > 0.5 ? '#5fe07a' : '#2a6a3a'; ctx.fillRect(x + 11, y + 14, 4, 2);
+    ctx.fillStyle = noteCol(this.beatN); ctx.fillRect(x + 12, y + 5, 2, 1);
+  }
+  /* inside the Veil Gate: a slow swirl of dark motes, or blinding light when it opens */
+  drawVeil(ctx, x, y, t) {
+    const open = this.gateGlow > 0;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x + 12, y + 8, 24, 40); ctx.clip();
+    ctx.fillStyle = open ? '#e8fbff' : '#0a0418'; ctx.fillRect(x + 12, y + 8, 24, 40);
+    for (let i = 0; i < 30; i++) {
+      const a = t / 40 + i * 0.7, r = (i * 1.3 + t / 9) % 16;
+      ctx.fillStyle = open ? (i % 3 ? '#8ff0ff' : '#ffd23a') : (i % 3 ? '#3a1a6a' : '#8a5ad8');
+      ctx.fillRect(Math.round(x + 24 + Math.cos(a) * r), Math.round(y + 29 + Math.sin(a) * r * 1.3), 1, 1);
+    }
+    if (open) {   // through it: a girl with golden hair running, and shadows behind her
+      const gx = x + 30 - ((t >> 1) % 20);
+      ctx.fillStyle = '#2a1640'; ctx.fillRect(gx + 7, y + 30, 3, 5); ctx.fillRect(gx + 11, y + 29, 3, 6);
+      ctx.fillStyle = '#f0b440'; ctx.fillRect(gx, y + 27, 3, 3); ctx.fillRect(gx + 2, y + 28, 2, 2);
+      ctx.fillStyle = '#1f6b34'; ctx.fillRect(gx, y + 30, 3, 4);
+      if (t % 8 < 4) { ctx.fillStyle = '#ffffff'; ctx.fillRect(gx + 1, y + 30, 1, 1); }
+    }
+    ctx.restore();
+  }
 
   drawPodGuest(ctx, pr, x, y, t) {
     const near = Math.max(Math.abs(pr.x - this.player.x), Math.abs(pr.y - this.player.y)) <= 2;
@@ -585,18 +806,18 @@ export class World {
     if (k < 6) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 5, y - 1 + (k >> 1), 1, 1); if (k > 1 && k < 5) { ctx.fillRect(x + 4, y + (k >> 1), 3, 1); } }
   }
 
-  frameOf(e, moving) { return e.moving ? (e.prog < 8 ? (e.parity ? 1 : 2) : 0) : 0; }
+  frameOf(e) { return e.moving ? (e.prog < 8 ? (e.parity ? 1 : 2) : 0) : 0; }
   dirKey(d) { return d === 'left' || d === 'right' ? 'side' : d; }
 
   drawPlayer(ctx, t) {
-    const p = this.player, st = this.st, k = this.dirKey(p.dir), flip = p.dir === 'left', fr = this.frameOf(p);
+    const p = this.player, st = this.st, k = this.dirKey(p.dir), flip = p.dir === 'left', fr = this.frameOf(p), pal = this.heroPal(t);
     const x = Math.round(p.px) + this.wigX(p), y = Math.round(p.py) - 4 + this.hopY(p);
     this.shadow(ctx, Math.round(p.px), Math.round(p.py));
     if (st.riding && st.pet) {
-      this.drawRider(ctx, x, y, p.dir, fr, this.petSprite(st.pet, k, fr, flip, t), spr(CH.KID_TOP[st.gender][k], CH.KID_PAL[st.gender], flip), st.pet.species);
+      this.drawRider(ctx, x, y, p.dir, fr, this.petSprite(st.pet, k, fr, flip, t), spr(CH.HERO_TOP[k], pal, flip), st.pet.species);
       return;
     }
-    ctx.drawImage(spr(CH.KID[st.gender][k][fr], CH.KID_PAL[st.gender], flip), x, y);
+    ctx.drawImage(spr(CH.HERO[k][fr], pal, flip), x, y);
   }
   drawRider(ctx, x, y, dir, fr, base, top, species) {
     const lift = species === 'dragon' ? 2 : 0;
@@ -610,6 +831,12 @@ export class World {
     return spr(art.frames[k][fr], art.pal(pet.variant, t), flip);
   }
   shadow(ctx, x, y) { ctx.fillStyle = 'rgba(20,8,30,0.28)'; ctx.fillRect(x + 3, y + 13, 10, 2); ctx.fillRect(x + 4, y + 12, 8, 1); }
+  /* Enya is an echo from beyond the veil: see-through, and she flickers */
+  echo(ctx, t, fn) {
+    ctx.globalAlpha = t % 190 < 4 || t % 67 === 0 ? 0.3 : 0.72 + 0.14 * Math.sin(t / 15);
+    fn();
+    ctx.globalAlpha = 1;
+  }
   drawFollower(ctx, f, t) {
     const st = this.st, k = this.dirKey(f.dir), flip = f.dir === 'left', fr = this.frameOf(f);
     const x = Math.round(f.px) + this.wigX(f), y = Math.round(f.py) - 4 + this.hopY(f);
@@ -618,8 +845,8 @@ export class World {
       const lift = st.pet.species === 'dragon' ? Math.round(Math.sin(t / 10) * 1.5) + 2 : 0;
       ctx.drawImage(this.petSprite(st.pet, k, fr, flip, t), x, y - lift);
     } else {
-      this.drawRider(ctx, x, y, f.dir, fr, spr(CH.TIGER[k][fr], CH.EMERALD_PAL, flip), spr(CH.ENYA_TOP[k], CH.ENYA_PAL, flip), 'tiger');
-      if (t % 40 < 3) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 7, y - (f.dir === 'up' ? 0 : 0), 1, 1); }
+      this.echo(ctx, t, () => this.drawRider(ctx, x, y, f.dir, fr, spr(CH.TIGER[k][fr], CH.EMERALD_PAL, flip), spr(CH.ENYA_TOP[k], CH.ENYA_PAL, flip), 'tiger'));
+      if (t % 40 < 3) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 7, y, 1, 1); }
     }
   }
   drawNpc(ctx, n, t) {
@@ -639,8 +866,23 @@ export class World {
       if (Math.floor(t / 20) % 2) { ctx.fillStyle = '#ff3b4a'; ctx.fillRect(x + 7, y + 4 + hov, 2, 1); }
       return;
     }
+    if (n.art === 'jelly') {   // floating, bopping to the beat, tentacles swaying
+      const bob = Math.round(Math.sin(t / 18 + n.x) * 1.5) - Math.round(this.pulse * 2);
+      ctx.fillStyle = 'rgba(20,8,30,0.22)'; ctx.fillRect(x + 4, y + 17, 8, 2);
+      ctx.globalAlpha = 0.93;
+      ctx.drawImage(spr((n.dj ? CH.JELLY_DJ : CH.JELLY)[this.beatN & 1], CH.JELLY_PALS[n.pal] || CH.JELLY_PALS.pink), x, y - 5 + bob);
+      ctx.globalAlpha = 1;
+      return;
+    }
+    if (n.art === 'lumen') {   // the Light Keeper, hovering in her own soft glow
+      const hov = Math.round(Math.sin(t / 16) * 1.5);
+      ctx.globalAlpha = 0.16 + 0.06 * Math.sin(t / 20); disc(ctx, x + 8, y + 6 + hov, 12, '#fff2a0'); ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(20,8,30,0.25)'; ctx.fillRect(x + 5, y + 17, 6, 2);
+      ctx.drawImage(spr(CH.LUMEN, CH.LUMEN_PAL), x, y - 3 + hov);
+      return;
+    }
     this.shadow(ctx, x, y + 4);
-    if (n.art === 'enya') { this.drawRider(ctx, x, y, n.dir, fr, spr(CH.TIGER[k][fr], CH.EMERALD_PAL, flip), spr(CH.ENYA_TOP[k], CH.ENYA_PAL, flip), 'tiger'); return; }
+    if (n.art === 'enya') { this.echo(ctx, t, () => this.drawRider(ctx, x, y, n.dir, fr, spr(CH.TIGER[k][fr], CH.EMERALD_PAL, flip), spr(CH.ENYA_TOP[k], CH.ENYA_PAL, flip), 'tiger')); return; }
     if (n.art === 'sprig') ctx.drawImage(spr(CH.SPRIG[k][0], CH.SPRIG_PAL, flip), x, y + (Math.floor(t / 24) % 2));
     else if (n.art === 'pet') ctx.drawImage(spr(CH.COMPANION_ART[n.species].frames[k][fr], CH.COMPANION_ART[n.species].pal(n.variant, t), flip), x, y);
     else ctx.drawImage(spr(CH.BLOOM[k][Math.floor(t / 30) % 2 ? 1 : 0], CH.BLOOM_PALS[n.pal] || CH.BLOOM_PALS.mint, flip), x, y);

@@ -31,7 +31,8 @@ await page.click('.n8-overlay');
 await sleep(2400);
 await key('Space'); await sleep(300); await key('Space'); await sleep(800);
 await key('Escape'); await sleep(1400);
-await key('Space'); await sleep(300); await key('Space'); await sleep(300);
+// close "What was your name again...?" (one press finishes the typing, the next closes it)
+for (let i = 0; i < 10 && (await G(() => { const g = document.querySelector('[data-nova8]').nova8.game; return !!g.top && g.top.kind === 'Dialog'; })); i++) { await key('Space'); await sleep(300); }
 await key('Enter'); await sleep(600); await key('Space'); await sleep(2000);
 await mash(worldIdle, 80);
 console.log('awake, top:', await top());
@@ -102,7 +103,7 @@ await shot('boss-won');
 await G(() => { const w = document.querySelector('[data-nova8]').nova8.game.top; w.load('bloomhaven', 4, 5, 'up'); });
 await sleep(400);
 await key('Space'); await sleep(800);
-for (let i = 0; i < 80 && (await top()) !== 'Ending'; i++) { await key('Space', 30); await sleep(150); }
+for (let i = 0; i < 200 && (await top()) !== 'Ending'; i++) { await key('Space', 30); await sleep(150); }
 await sleep(800);
 await shot('ending');
 const st = await G(() => JSON.stringify(document.querySelector('[data-nova8]').nova8.game.state));
