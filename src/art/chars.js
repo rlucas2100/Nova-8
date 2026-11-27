@@ -2,7 +2,7 @@
    LUMEN the Light Keeper and the jellies of the Jelly Jam. One letter per pixel; each direction
    has a standing frame and two steps, and facing left is the side frames mirrored. All original
    pixel art. */
-import { art, remap } from '../engine/pixel.js';
+import { art, remap, painter } from '../engine/pixel.js';
 
 export const INK = '#1a0f2e';
 
@@ -453,6 +453,171 @@ export const JELLY_PALS = {
   gold: { ...JELLY_BASE, K: '#5a3a06', B: '#ffd25a', b: '#d89a2a', l: '#fff6c8', M: '#5a3a06', T: '#ffe8a0' },
   mint: { ...JELLY_BASE, K: '#0a4a30', B: '#7fe0b0', b: '#3fa880', l: '#e0fff0', M: '#0a4a30', T: '#b8f4d8' },
 };
+
+/* ---------- CODY, the wise (and cheeky) white cat ----------
+   He walks on two legs and leans on his staff (the Dragon King's old pillar: it grows, shrinks to the size
+   of an earbud for keeping in his ear, flies and fights on command, and weighs seven thousand kilos).
+   W fur, w fur shade, P inner ear, N nose, E eyes, e pupils, M mouth, R his purple neckerchief,
+   B staff wood, b wood shade, Y gold bands, y the star cap's glow, G/g frost-glass sunglasses */
+function codyFrame(dir, step, shades, bare) {
+  const p = painter(16, 16);
+  const side = dir === 'side', up = dir === 'up';
+  const sx = 14;                                                     // the staff, held upright in his right paw
+  if (!bare) { p.line(sx, 2, sx, 15, 'B'); p.set(sx, 5, 'Y'); p.set(sx, 12, 'Y'); p.set(sx, 1, 'Y'); p.set(sx, 0, 'y'); }
+  if (side) {
+    p.line(4, 12, 2, 10, 'W'); p.line(2, 10, 2, 8, 'W'); p.set(3, 7, 'W');                  // tail, curling up behind
+    p.ellipse(7.5, 11.2, 3.1, 2.9, 'W');                                                   // body
+    p.rect(6, 13, 2, step === 1 ? 1 : 2, 'W'); p.rect(8, 13, 2, step === 2 ? 1 : 2, 'W');   // legs
+    if (step === 1) p.set(5, 13, 'W'); if (step === 2) p.set(10, 13, 'W');
+    if (bare) p.line(9, 10, 10, 12, 'W'); else p.line(9, 10, 13, 9, 'W');                  // arm out to the staff (or down)
+    p.ellipse(8.2, 5.3, 4.6, 3.9, 'W');                                                    // head
+    p.ellipse(11.6, 6.6, 1.6, 1.3, 'W');                                                   // muzzle
+    p.poly([[5, 3], [5.5, -0.5], [8.5, 2]], 'W'); p.set(6, 1, 'P'); p.set(6, 2, 'P');       // the near ear
+    p.poly([[9, 2], [10.5, -0.5], [11.5, 3]], 'w');                                        // the far ear
+    p.rect(6, 9, 4, 1, 'R'); p.set(9, 10, 'R');                                            // neckerchief
+    p.shade('W', 'w', -1, 1, 1);
+    if (shades) { p.rect(9, 5, 3, 1, 'G'); p.set(10, 4, 'G'); p.set(8, 5, 'G'); p.set(10, 5, 'g'); }
+    else { p.set(10, 5, 'E'); p.set(11, 5, 'e'); p.set(10, 4, 'K'); p.set(11, 4, 'K'); }
+    p.set(12, 6, 'N'); p.set(11, 8, 'M'); p.set(12, 8, 'M');
+  } else {
+    if (up) { p.line(7, 14, 9, 12, 'W'); p.line(9, 12, 10, 9, 'W'); p.set(10, 8, 'W'); }   // tail, from behind
+    else { p.line(3, 13, 1, 11, 'W'); p.set(1, 10, 'W'); }
+    p.ellipse(6.5, 11.4, 3.5, 3, 'W');                                                     // body
+    p.rect(4, 13, 2, step === 1 ? 1 : 2, 'W'); p.rect(7, 13, 2, step === 2 ? 1 : 2, 'W');   // feet
+    p.rect(2, 10, 1, 2, 'W');                                                              // left paw on his hip
+    if (bare) p.rect(10, 10, 1, 2, 'W'); else p.line(9, 10, 13, 9, 'W');                    // right arm out to the staff
+    p.ellipse(6.5, 5.4, 5.3, 3.9, 'W');                                                    // head
+    p.poly([[1.5, 3.5], [2, -0.5], [5, 2]], 'W'); p.poly([[8, 2], [11, -0.5], [11.5, 3.5]], 'W');   // ears
+    if (!up) { p.set(2, 1, 'P'); p.set(2, 2, 'P'); p.set(3, 2, 'P'); p.set(10, 1, 'P'); p.set(10, 2, 'P'); p.set(9, 2, 'P'); }
+    p.rect(4, 9, 5, 1, 'R'); if (!up) p.set(6, 10, 'R');                                    // neckerchief
+    p.shade('W', 'w', 1, 1, 1);
+    if (!up) {
+      if (shades) { p.rect(3, 5, 7, 1, 'G'); p.set(3, 4, 'G'); p.set(4, 4, 'G'); p.set(8, 4, 'G'); p.set(9, 4, 'G'); p.set(4, 5, 'g'); p.set(8, 5, 'g'); p.set(6, 5, 'Y'); }
+      else { p.set(4, 5, 'E'); p.set(8, 5, 'E'); p.set(5, 5, 'e'); p.set(9, 5, 'e'); p.set(4, 4, 'K'); p.set(5, 4, 'K'); p.set(8, 4, 'K'); p.set(9, 4, 'K'); }   // half-lidded, a sideways look
+      p.set(6, 6, 'N'); p.set(5, 7, 'M'); p.set(7, 7, 'M');                                 // a little cat smile
+    } else p.set(6, 3, 'w');
+  }
+  p.outline('K');
+  if (!up) { p.set(0, side ? 7 : 6, 'w'); if (!side) p.set(13, 6, 'w'); }                  // whiskers poking out
+  return p.rows();
+}
+const codyDir = (dir, shades, bare) => [0, 1, 2].map((s) => codyFrame(dir, s, shades, bare));
+export const CODY = { down: codyDir('down'), up: codyDir('up'), side: codyDir('side') };
+export const CODY_SHADES = { down: codyDir('down', true), up: CODY.up, side: codyDir('side', true) };
+/* with his staff tucked away in his ear (or out doing the work) */
+export const CODY_BARE = { down: codyDir('down', false, true), up: codyDir('up', false, true), side: codyDir('side', false, true) };
+export const CODY_BARE_SHADES = { down: codyDir('down', true, true), up: CODY_BARE.up, side: codyDir('side', true, true) };
+export const CODY_PAL = { K: '#2a1a3a', W: '#ffffff', w: '#c8bcdc', P: '#ff9ac0', N: '#ff6a9a', E: '#ffc23a', e: '#2a1a3a', M: '#2a1a3a', R: '#8a50e4', B: '#9a6232', b: '#5a3a1c', Y: '#ffd23a', y: '#fff6a0', G: '#14142a', g: '#8fd0ff' };
+
+/* ---------- turtles: they roam about, and often carry something on their shells ----------
+   S shell, s shell plates, r shell rim, L skin, E eye */
+function turtleFrame(dir, step) {
+  const p = painter(16, 16);
+  if (dir === 'side') {
+    p.rect(2, 12, 2, 2, 'L'); p.rect(9, 12, 2, 2, 'L');                                     // legs, walking
+    if (step === 1) { p.rect(1, 12, 1, 1, 'L'); p.rect(11, 12, 1, 1, 'L'); }
+    if (step === 2) { p.rect(4, 13, 1, 1, 'L'); p.rect(8, 13, 1, 1, 'L'); }
+    p.set(1, 11, 'L');                                                                      // tail
+    p.ellipse(13, 9.6, 1.9, 1.7, 'L'); p.rect(11, 10, 2, 2, 'L');                             // head and neck
+    p.ellipse(7, 9, 5.6, 3.8, 'S'); p.rect(1, 9, 12, 3, '.'); p.rect(1, 9, 12, 2, 'S');      // the dome of the shell
+    p.rect(1, 11, 12, 1, 'r');
+    for (const [x, y] of [[4, 8], [7, 7], [10, 8], [5, 10], [9, 10]]) p.set(x, y, 's');
+    p.shade('S', 's', 0, 1, 1);
+    p.outline('K');
+    p.set(13, 9, 'E'); p.set(14, 11, 'K');
+  } else {
+    const back = dir === 'up';
+    p.rect(2, 12, 2, step === 1 ? 1 : 2, 'L'); p.rect(12, 12, 2, step === 2 ? 1 : 2, 'L');   // legs
+    if (back) p.set(8, 14, 'L');                                                            // tail
+    else { p.ellipse(8, 11.6, 2.2, 2, 'L'); }                                                // head, peeking out
+    p.ellipse(8, 9, 6.2, 3.6, 'S'); p.rect(1, 9, 14, 3, '.'); p.rect(2, 9, 12, 2, 'S');
+    if (!back) { p.ellipse(8, 11.6, 2.2, 2, 'L'); p.set(7, 11, 'E'); p.set(9, 11, 'E'); p.set(8, 13, 'K'); }
+    p.rect(2, 11, 12, 1, 'r');
+    if (!back) p.ellipse(8, 12, 2.1, 1.6, 'L');
+    for (const [x, y] of [[5, 8], [8, 7], [11, 8], [8, 9]]) p.set(x, y, 's');
+    if (!back) { p.set(7, 11, 'E'); p.set(9, 11, 'E'); p.set(7, 13, 'K'); p.set(8, 13, 'K'); p.set(9, 13, 'K'); }
+    p.outline('K');
+  }
+  return p.rows();
+}
+const turtleDir = (d) => [0, 1, 2].map((s) => turtleFrame(d, s));
+export const TURTLE = { down: turtleDir('down'), up: turtleDir('up'), side: turtleDir('side') };
+export const TURTLE_PALS = {
+  green: { K: '#0e2a14', S: '#3fae5a', s: '#1f6a34', r: '#e8d890', L: '#a8e07a', E: '#0e2a14' },
+  purple: { K: '#1e0a3a', S: '#a060e0', s: '#5a2aa0', r: '#ffd6f4', L: '#b8f0a0', E: '#1e0a3a' },
+  yellow: { K: '#3a2606', S: '#ffd23a', s: '#c8881a', r: '#fff6d0', L: '#b0e888', E: '#3a2606' },
+};
+
+/* ---------- the Dragon King's crab guards: R shell, r shade, W eyes, B spear shaft, Y spear tip ---------- */
+function crabFrame(open) {
+  const p = painter(16, 16);
+  p.line(15, 1, 15, 15, 'B'); p.set(15, 0, 'Y'); p.set(15, 1, 'Y');
+  for (const lx of [3, 5, 10, 12]) p.line(lx, 12, lx + (lx < 8 ? -2 : 2), 15, 'r');        // legs
+  p.ellipse(7.5, 11, 5.2, 3.2, 'R');                                                        // body
+  p.line(5, 9, 5, 5, 'r'); p.line(10, 9, 10, 5, 'r');                                       // eye stalks
+  p.ellipse(5, 4.5, 1.3, 1.3, 'W'); p.ellipse(10, 4.5, 1.3, 1.3, 'W');
+  p.ellipse(2, open ? 6 : 7, 2, 2, 'R'); p.ellipse(13, open ? 6 : 7, 2, 2, 'R');           // claws, snapping
+  if (open) { p.set(1, 4, 'R'); p.set(3, 4, 'R'); p.set(12, 4, 'R'); p.set(14, 4, 'R'); }
+  p.shade('R', 'r', 0, 1, 1);
+  p.outline('K');
+  p.set(5, 4, 'K'); p.set(10, 4, 'K');
+  p.line(6, 12, 9, 12, 'K');
+  return p.rows();
+}
+export const CRAB = [crabFrame(false), crabFrame(true)];
+export const CRAB_PALS = {
+  red: { K: '#2a0808', R: '#ff6a4a', r: '#b83a2a', W: '#ffffff', B: '#8a5a2c', Y: '#ffd23a' },
+  coral: { K: '#2a0818', R: '#ff8ab0', r: '#c0507a', W: '#ffffff', B: '#8a5a2c', Y: '#c8f4ff' },
+};
+
+/* ---------- the dream: two kids on a summer's day, and the neighbour whose roof the ball keeps landing on ----------
+   H hair, h hair shine, S skin, E eyes, T top, t top shade, D shorts / skirt, B shoes, L ice lolly */
+function kidFrame(girl, pose) {
+  const p = painter(16, 16);
+  const sit = pose === 'sit', swing = pose === 'swing', run = pose === 'run';
+  if (girl) p.poly([[4, 3], [3, 9], [4, 12], [7, 10], [7, 3]], 'H');                        // her hair, down her back
+  else p.rect(5, 1, 3, 5, 'H');                                                             // his, short at the back
+  if (sit) { p.rect(5, 12, 6, 2, 'D'); p.rect(9, 13, 4, 1, 'S'); p.rect(12, 13, 2, 2, 'B'); p.rect(10, 13, 1, 1, 'S'); }
+  else {
+    p.rect(6, 12, 2, run ? 2 : 3, 'S'); p.rect(9, 12, 2, run ? 3 : 3, 'S');
+    if (run) { p.set(5, 13, 'S'); p.rect(4, 14, 2, 1, 'B'); } else p.rect(5, 14, 3, 1, 'B');
+    p.rect(9, 14, 3, 1, 'B');
+    p.rect(5, 10, 7, girl ? 3 : 2, 'D');
+  }
+  p.rect(5, 7, 7, 4, 'T');                                                                  // top
+  if (swing) { p.line(11, 7, 14, 3, 'S'); p.set(14, 2, 'S'); }                              // an arm up, hitting the ball
+  else if (sit) { p.line(11, 8, 12, 6, 'S'); p.set(12, 5, 'L'); p.set(12, 4, 'L'); }         // holding an ice lolly
+  else p.line(11, 8, 12, 11, 'S');
+  p.ellipse(8.5, 4, 3.4, 3.4, 'S');                                                         // head
+  p.poly(girl ? [[5, 3], [6, 0.5], [11, 0.5], [12.5, 3], [11, 2.5], [8, 3]] : [[5, 3.5], [6, 0.5], [11, 0.5], [12.5, 2.5], [10, 2], [7, 3]], 'H');
+  if (girl) p.rect(5, 2, 1, 5, 'H');
+  p.shade('T', 't', 0, 1, 1);
+  p.outline('K');
+  p.set(10, 4, 'E'); p.set(11, 5, 'M');
+  if (girl) p.set(12, 2, 'F');                                                              // a shamrock clip, even then
+  return p.rows();
+}
+export const KID = { hero: {}, enya: {} };
+for (const pose of ['stand', 'sit', 'swing', 'run']) { KID.hero[pose] = kidFrame(false, pose); KID.enya[pose] = kidFrame(true, pose); }
+export const KID_HERO_PAL = { K: INK, H: '#4a2c1c', S: '#ffd0a6', E: '#0f6e3e', M: '#c0606a', T: '#2fc6b4', t: '#1b8f8c', D: '#3a4a8a', B: '#f6f2ff', L: '#ff6ab0' };
+export const KID_ENYA_PAL = { K: INK, H: '#f0b440', S: '#f2c08e', E: '#2fd85a', M: '#c0606a', T: '#3fae5a', t: '#1f6b34', D: '#1f6b34', B: '#ff8ad8', L: '#ffd25a', F: '#3ae070' };
+/* MR NOLAN, at his upstairs window: bald on top, two white tufts, specs, and a very red face when he's cross */
+export const NOLAN = art(`
+  ................
+  .....KKKKKK.....
+  ...KKSSSSSSKK...
+  ..KWKSSSSSSKWK..
+  ..KWSKKSSKKSWK..
+  ..KSGGGSSGGGSK..
+  ..KSGEGSSGEGSK..
+  ..KSSSSNNSSSSK..
+  ...KSSKKKKSSK...
+  ....KSSSSSSK....
+  ...KVVVKKVVVK...
+  ..KVVVVTTVVVVK..
+`);
+export const NOLAN_PAL = { K: INK, S: '#ffc8a0', W: '#f6f2ff', G: '#2a2a3a', E: '#ffffff', N: '#e89070', V: '#6a4a8a', T: '#f6f2ff' };
+export const NOLAN_CROSS = { ...NOLAN_PAL, S: '#ff8a7a', N: '#e85a5a' };
 
 /* the companions, by species, for walking behind you (or carrying you) */
 export const COMPANION_ART = {

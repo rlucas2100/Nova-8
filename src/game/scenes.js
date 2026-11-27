@@ -1,5 +1,5 @@
 /* Title screen, the crash, remembering your name, the START menu screens (party, bag, COSMIC TUBES,
-   quest notes and memories) and the end of Chapter 1. */
+   quest notes and memories), the end of each chapter, the COMET's flights and the dreams on them. */
 import { W, H, spr, hash, makeCanvas, disc } from '../engine/pixel.js';
 import { text, measure, wrap } from '../engine/font.js';
 import { box, bar, hpColour, C } from './ui.js';
@@ -11,8 +11,8 @@ import { BATTLERS } from '../art/battlers.js';
 import { buildProps } from '../art/tiles.js';
 import { World } from './world.js';
 import { SCRIPTS } from './story.js';
-import { MOVES, ITEMS, JEWELS, PARTS, COMPANIONS, BLUE_DRAGON, WILD, CATCHABLE, MEMORIES, HERO_NAMES, DEFAULT_NAMES, statsAt, companionStats, companionArt, xpToNext, MAX_EN } from './data.js';
-import { memoryCount } from './memory.js';
+import { MOVES, ITEMS, JEWELS, PARTS, CH1_PARTS, CH2_PARTS, COMPANIONS, BLUE_DRAGON, WILD, CATCHABLE, MEMORIES, HERO_NAMES, DEFAULT_NAMES, statsAt, companionStats, companionArt, xpToNext, MAX_EN, levelUp } from './data.js';
+import { memoryCount, remember } from './memory.js';
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
@@ -22,10 +22,10 @@ const planet = () => PLANET || (PLANET = buildProps().planet.img[0]);
 
 export function newState(name) {
   return {
-    v: 2, name, map: 'bloomhaven', x: 4, y: 5, dir: 'up',
+    v: 3, name, map: 'bloomhaven', x: 4, y: 5, dir: 'up',
     pet: null, riding: false, flags: {}, got: {}, parts: {},
     jewels: { gold: 0, emerald: 0, sapphire: 0, ruby: 0, diamond: 0 }, money: 0,
-    bag: { berry: 0, tonic: 0, melon: 0, tube: 0 },
+    bag: { berry: 0, tonic: 0, melon: 0, tube: 0, catnip: 0 },
     tubes: {}, captures: 0, memories: [], furyT: 0,
     respawn: { map: 'bloomhaven', x: 14, y: 12, dir: 'up' },
     steps: 0, battles: 0, playMs: 0, started: Date.now(),
@@ -142,7 +142,7 @@ export class Title {
     const bob = Math.round(Math.sin(t / 30) * 1.5);
     text(ctx, 'COSMIC', W / 2, 16 + bob, '#ffd23a', { scale: 2, outline: '#1a0f2e', align: 'center' });
     text(ctx, 'CASTAWAYS', W / 2, 36 + bob, '#8ff0ff', { scale: 2, outline: '#1a0f2e', align: 'center' });
-    text(ctx, 'CHAPTER 1: CRASH LANDING', W / 2, 58, '#e6d8ff', { align: 'center', shadow: '#1a0f2e' });
+    text(ctx, 'CHAPTER 2: THE DRAGON KINGS', W / 2, 58, '#e6d8ff', { align: 'center', shadow: '#1a0f2e' });
     // the three companions on a ledge
     const pal = CH.OCTO_PALS[Math.floor(t / 8) % CH.OCTO_PALS.length];
     const fr = Math.floor(t / 20) % 2;
@@ -471,6 +471,18 @@ class BagScreen extends Page {
     if (!st.bag[id]) { sfx.bump(); await g.say("You don't have any."); this.busy = false; return; }
     if (it.capture) { await g.say('Use it in battle: weaken a wild creature first, then open the tube!'); this.busy = false; return; }
     if (!st.pet) { await g.say('You have no companion to give it to yet.'); this.busy = false; return; }
+    if (it.levelup) {   // CODY's GOLDEN CATNIP: one sniff, one whole level
+      if (st.pet.lv >= 30) { await g.say(`${st.pet.name} is already as strong as a companion can be!`); this.busy = false; return; }
+      st.bag[id]--;
+      const pet = st.pet, r = levelUp(pet);
+      pet.en = MAX_EN(pet.lv);
+      sfx.levelup();
+      await g.say({ tiger: `${pet.name} sniffs the GOLDEN CATNIP... and rolls about in it, purring like an engine!`, dragon: `${pet.name} sniffs the GOLDEN CATNIP and sneezes out a puff of golden sparkles!`, octo: `${pet.name} sniffs the GOLDEN CATNIP and glows every colour of the rainbow!` }[pet.species]);
+      await g.say(`${pet.name} grew to Lv ${pet.lv}!  HP ${r.now.hp}  ATK ${r.now.atk}  DEF ${r.now.def}  SPD ${r.now.spd}`);
+      for (const m of r.learned) { sfx.buff(); await g.say(`${pet.name} learned ${MOVES[m].name}!`); }
+      this.busy = false;
+      return;
+    }
     const s = companionStats(st.pet);
     if (st.pet.hp >= s.hp && st.pet.en >= MAX_EN(st.pet.lv)) { await g.say(st.pet.name + ' is already full of beans!'); this.busy = false; return; }
     st.bag[id]--;
@@ -483,16 +495,16 @@ class BagScreen extends Page {
   draw(ctx, g) {
     const st = g.state, ids = Object.keys(ITEMS);
     this.frame(ctx, 'BAG');
-    box(ctx, 2, 20, W - 4, 52);
+    box(ctx, 2, 19, W - 4, 56);
     ids.forEach((k, i) => {
-      if (i === this.sel) text(ctx, '▶', 8, 26 + i * 12, C.gold);
-      text(ctx, ITEMS[k].name, 16, 26 + i * 12, st.bag[k] ? C.text : C.dim);
-      text(ctx, '×' + (st.bag[k] || 0), 150, 26 + i * 12, C.cyan, { align: 'right' });
+      if (i === this.sel) text(ctx, '▶', 8, 24 + i * 10, C.gold);
+      text(ctx, ITEMS[k].name, 16, 24 + i * 10, st.bag[k] ? (ITEMS[k].rare ? C.gold : C.text) : C.dim);
+      text(ctx, '×' + (st.bag[k] || 0), 150, 24 + i * 10, C.cyan, { align: 'right' });
     });
-    wrap(ITEMS[ids[this.sel]].desc, W - 12).slice(0, 2).forEach((l, i) => text(ctx, l, 6, 75 + i * 9, C.dim));
-    box(ctx, 2, 96, W - 4, 46);
-    text(ctx, 'JEWELS', 8, 101, C.gold);
-    text(ctx, 'TOTAL ◆' + st.money, 152, 101, C.cyan, { align: 'right' });
+    wrap(ITEMS[ids[this.sel]].desc, W - 12).slice(0, 2).forEach((l, i) => text(ctx, l, 6, 77 + i * 9, C.dim));
+    box(ctx, 2, 97, W - 4, 45);
+    text(ctx, 'JEWELS', 8, 102, C.gold);
+    text(ctx, 'TOTAL ◆' + st.money, 152, 102, C.cyan, { align: 'right' });
     const kinds = ['gold', 'emerald', 'sapphire', 'ruby', 'diamond'];
     const cols = { gold: C.gold, emerald: '#2fe070', sapphire: '#4f8cff', ruby: '#ff3a4e', diamond: '#c8f4ff' };
     kinds.forEach((k, i) => {
@@ -512,34 +524,34 @@ class TubeScreen extends Page {
     const n = CATCHABLE.length, inp = g.input, old = this.sel;
     if (inp.repeat('right')) this.sel = (this.sel + 1) % n;
     if (inp.repeat('left')) this.sel = (this.sel + n - 1) % n;
-    if (inp.repeat('down') && this.sel + 6 < n) this.sel += 6;
-    if (inp.repeat('up') && this.sel - 6 >= 0) this.sel -= 6;
+    if (inp.repeat('down') && this.sel + 7 < n) this.sel += 7;
+    if (inp.repeat('up') && this.sel - 7 >= 0) this.sel -= 7;
     if (old !== this.sel) sfx.move();
   }
   draw(ctx, g) {
     const st = g.state, tubes = st.tubes || {}, t = this.t;
     const kinds = CATCHABLE.filter((k) => tubes[k]).length;
     this.frame(ctx, 'COSMIC TUBES ' + kinds + '/' + CATCHABLE.length);
-    CATCHABLE.forEach((sp, i) => {
-      const x0 = 6 + (i % 6) * 25, y0 = 21 + Math.floor(i / 6) * 38, have = tubes[sp] || 0;
-      if (i === this.sel) box(ctx, x0 - 1, y0 - 1, 26, 37, { bg: '#2e1a5a', edge: C.gold });
+    CATCHABLE.forEach((sp, i) => {   // seven to a row
+      const x0 = 5 + (i % 7) * 21, y0 = 20 + Math.floor(i / 7) * 38, have = tubes[sp] || 0;
+      if (i === this.sel) box(ctx, x0 - 1, y0 - 1, 22, 37, { bg: '#2e1a5a', edge: C.gold });
       const x = x0 + 2, y = y0 + 2;
-      ctx.fillStyle = '#1a0f2e'; ctx.fillRect(x - 1, y - 1, 22, 30);
-      ctx.fillStyle = '#c8ccdc'; ctx.fillRect(x, y, 20, 3); ctx.fillRect(x, y + 25, 20, 3);
-      ctx.fillStyle = '#7a7e94'; ctx.fillRect(x, y + 2, 20, 1); ctx.fillRect(x, y + 25, 20, 1);
-      ctx.fillStyle = '#140832'; ctx.fillRect(x, y + 3, 20, 22);
+      ctx.fillStyle = '#1a0f2e'; ctx.fillRect(x - 1, y - 1, 18, 30);
+      ctx.fillStyle = '#c8ccdc'; ctx.fillRect(x, y, 16, 3); ctx.fillRect(x, y + 25, 16, 3);
+      ctx.fillStyle = '#7a7e94'; ctx.fillRect(x, y + 2, 16, 1); ctx.fillRect(x, y + 25, 16, 1);
+      ctx.fillStyle = '#140832'; ctx.fillRect(x, y + 3, 16, 22);
       if (have) {
-        for (let k = 0; k < 6; k++) {   // the infinity of light: frames inside frames
-          const ix = x + k, iy = y + 3 + k, iw = 20 - k * 2, ih = 22 - k * 2;
+        for (let k = 0; k < 5; k++) {   // the infinity of light: frames inside frames
+          const ix = x + k, iy = y + 3 + k, iw = 16 - k * 2, ih = 22 - k * 2;
           ctx.fillStyle = TUBE_COLS[(k + (t >> 3) + i) % 5]; ctx.globalAlpha = 0.55;
           ctx.fillRect(ix, iy, iw, 1); ctx.fillRect(ix, iy + ih - 1, iw, 1); ctx.fillRect(ix, iy, 1, ih); ctx.fillRect(ix + iw - 1, iy, 1, ih);
         }
         ctx.globalAlpha = 1;
         const b = BATTLERS[WILD[sp].art], img = spr(b.rows, b.pal);
-        ctx.drawImage(img, x + 2, y + 6 + Math.round(Math.sin(t / 15 + i) * 1), 16, 16);
-      } else text(ctx, '?', x + 8, y + 10, '#4a3a7a');
+        ctx.drawImage(img, x, y + 7 + Math.round(Math.sin(t / 15 + i) * 1), 16, 16);
+      } else text(ctx, '?', x + 6, y + 10, '#4a3a7a');
       ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x + 1, y + 4, 1, 12);
-      text(ctx, have ? '×' + have : '', x0 + 12, y0 + 30, C.cyan, { align: 'center' });
+      text(ctx, have ? '×' + have : '', x0 + 10, y0 + 30, C.cyan, { align: 'center' });
     });
     const sp = CATCHABLE[this.sel], have = tubes[sp] || 0;
     box(ctx, 2, 99, W - 4, 43);
@@ -565,11 +577,18 @@ class QuestScreen extends Page {
   }
   draw(ctx, g) { return this.page ? this.drawMemories(ctx, g) : this.drawParts(ctx, g); }
   drawParts(ctx, g) {
-    const st = g.state;
-    this.frame(ctx, 'SHIP PARTS   → MEMORIES');
+    const st = g.state, all = !!st.flags.chapter1;   // Chapter 2: all six
+    const list = all ? CH1_PARTS.concat(CH2_PARTS) : CH1_PARTS;
+    this.frame(ctx, 'SHIP PARTS ' + list.filter((k) => st.parts[k]).length + '/' + list.length + '  → MEMORIES');
     box(ctx, 2, 20, W - 4, 46);
-    Object.keys(PARTS).forEach((k, i) => {
+    list.forEach((k, i) => {
       const got = !!st.parts[k];
+      if (all) {   // two columns of three
+        const x = 8 + Math.floor(i / 3) * 76, y = 26 + (i % 3) * 13;
+        text(ctx, got ? '★' : '-', x, y, got ? C.gold : C.dim);
+        text(ctx, got || i < 3 ? PARTS[k].name : '???', x + 10, y, got ? C.text : C.dim);
+        return;
+      }
       text(ctx, got ? '★' : '-', 8, 26 + i * 13, got ? C.gold : C.dim);
       text(ctx, PARTS[k].name, 18, 26 + i * 13, got ? C.text : C.dim);
       text(ctx, got ? 'FOUND' : '???', 152, 26 + i * 13, got ? C.green : C.dim, { align: 'right' });
@@ -602,9 +621,9 @@ class QuestScreen extends Page {
   }
 }
 
-/* ---------- the end of Chapter 1 ---------- */
+/* ---------- the end of a chapter ---------- */
 export class Ending {
-  constructor(game, done) { this.kind = 'Ending'; this.game = game; this.done = done; this.opaque = true; this.t = 0; }
+  constructor(game, done, chapter = 1) { this.kind = 'Ending'; this.game = game; this.done = done; this.opaque = true; this.t = 0; this.chapter = chapter; }
   update(g) {
     this.t++;
     if (this.t > 120 && (g.input.pressed.a || g.input.pressed.start)) { sfx.select(); g.pop(this); this.done && this.done(); }
@@ -614,7 +633,7 @@ export class Ending {
     sky(ctx);
     stars(ctx, t, 0.5);
     comet(ctx, (t * 0.9) % (W + 60) - 30, 40 + Math.sin(t / 20) * 6, t);
-    text(ctx, 'CHAPTER 1', W / 2, 10, '#ffd23a', { scale: 2, outline: '#1a0f2e', align: 'center' });
+    text(ctx, 'CHAPTER ' + this.chapter, W / 2, 10, '#ffd23a', { scale: 2, outline: '#1a0f2e', align: 'center' });
     text(ctx, 'COMPLETE!', W / 2, 27, '#8ff0ff', { scale: 2, outline: '#1a0f2e', align: 'center' });
     box(ctx, 14, 52, W - 28, 68);
     const total = Object.values(st.jewels).reduce((a, b) => a + b, 0);
@@ -625,6 +644,246 @@ export class Ending {
     });
     text(ctx, 'TO BE CONTINUED...', W / 2, 124, '#e6d8ff', { align: 'center', shadow: '#1a0f2e' });
     if (t > 120 && Math.floor(t / 24) % 2 === 0) text(ctx, 'PRESS A', W / 2, 134, '#ffd23a', { align: 'center', shadow: '#1a0f2e' });
+  }
+}
+
+/* ---------- a short hop in the COMET (Chapter 2): over the curve of Kirra, to wherever you're going ---------- */
+export class Flight {
+  /* opt.dragon: on the White Dragon's back instead of in the COMET; opt.end: the colour to fade to as it ends */
+  constructor(game, dest, done, opt = {}) { this.kind = 'Flight'; this.game = game; this.dest = dest; this.done = done; this.opt = opt; this.opaque = true; this.t = 0; }
+  update(g) {
+    this.t++;
+    if (this.t > 170 || (this.t > 40 && (g.input.pressed.a || g.input.pressed.start))) {
+      g.fadeLevel = 1; g.fadeColour = this.opt.end || '#000000';   // so the old place doesn't flash up before the new one
+      g.pop(this); this.done && this.done();
+    }
+  }
+  draw(ctx) {
+    const t = this.t;
+    sky(ctx, '#140832', '#2e1660', '#4a2a8a');
+    stars(ctx, t, 1.2);
+    // Kirra's curve below, sliding past: red wilds, green jungle, the purple glow of the Jelly Jam
+    for (let x = 0; x < W; x++) {
+      const top = 104 + Math.round(((x - W / 2) ** 2) / 260);
+      const band = Math.floor((x + t * 1.5) / 26) % 4;
+      ctx.fillStyle = ['#b4443c', '#25603f', '#4a1f7a', '#3e4a26'][band]; ctx.fillRect(x, top, 1, H - top);
+      ctx.fillStyle = '#8ff0ff'; ctx.fillRect(x, top - 1, 1, 1);
+    }
+    for (let i = 0; i < 6; i++) { const cx = (W + 40 - ((t * 2.2 + i * 53) % (W + 80))) | 0, cy = 70 + ((i * 17) % 30); ctx.fillStyle = 'rgba(230,216,255,0.5)'; ctx.fillRect(cx, cy, 18, 1); ctx.fillRect(cx + 4, cy - 1, 9, 1); }
+    const k = Math.min(1, t / 140), x = -20 + k * (W + 40), y = 58 - Math.sin(k * Math.PI) * 18;
+    if (this.opt.dragon) {   // the White Dragon, with you on its back and the COMET in its claws
+      const b = BATTLERS.whiteDragon, img = spr(b.rows, b.pal, true);
+      for (let i = 1; i < 10; i++) { ctx.fillStyle = i % 2 ? '#ffffff' : '#c8f4ff'; ctx.fillRect(Math.round(x - 30 - i * 3), Math.round(y + 4 + Math.sin((t + i * 3) / 4) * 2), 1, 1); }
+      ctx.drawImage(img, Math.round(x - 24), Math.round(y - 22 + Math.sin(t / 8) * 2));
+      ctx.drawImage(spr(CH.HERO_TOP.side, CH.HERO_PAL, false), Math.round(x - 4), Math.round(y - 26 + Math.sin(t / 8) * 2));
+      if (this.opt.comet) comet(ctx, x - 6, y + 20, t);
+    } else {
+      for (let i = 1; i < 10; i++) { ctx.fillStyle = i % 2 ? '#ffd23a' : '#ff8a1e'; ctx.fillRect(Math.round(x - 14 - i * 3), Math.round(y + Math.sin((t + i * 3) / 4)), 2, 1); }
+      comet(ctx, x, y, t, -Math.cos(k * Math.PI) * 0.15);
+    }
+    box(ctx, 8, 6, W - 16, 26);
+    text(ctx, this.opt.dragon ? 'FLYING TO' : 'SHORT HOP TO', W / 2, 10, C.dim, { align: 'center' });
+    text(ctx, this.dest, W / 2, 20, C.gold, { align: 'center' });
+  }
+}
+
+/* ---------- dreams on the COMET: a summer's day before the war, and the war itself ----------
+   'summer': two kids on a warm kerb, then wall-ball against the gable end (press A to hit it back!) until
+   the ball lands on Mr Nolan's roof. 'war': the lost years, counted and forgotten, until her light breaks through. */
+const DAY = { sky: ['#6ec0f0', '#8ccff4', '#b4e2fa'], brick: '#b8584a', brick2: '#8a3a32', slate: '#4a5068', slate2: '#6a7290', frame: '#f6f2ff', glass: '#8ac8e8', pave: '#a8a8b8', pave2: '#8e8e9e', kerb: '#d8d8e0', road: '#5a5a66' };
+export class Dream {
+  constructor(game, which, done) {
+    this.kind = 'Dream'; this.game = game; this.which = which; this.done = done; this.opaque = true; this.t = 0;
+    this.kids = { hero: { x: 70, y: 117, pose: 'sit', flip: false }, enya: { x: 92, y: 117, pose: 'sit', flip: false } };
+    this.ball = null; this.win = 0; this.nolan = false; this.bang = 0; this.prompt = false; this.label = 0; this.dawn = 0; this.year = null;
+    this.go().catch((e) => { console.error(e); this.finish(); });
+  }
+  get name() { return this.game.state.name; }
+  finish() { if (this.over) return; this.over = true; this.game.pop(this); this.done && this.done(); }
+  update(g) {
+    this.t++;
+    if (this.swingWanted && (g.input.pressed.a || g.input.pressed.b)) this.swung = true;
+  }
+  async go() {
+    const g = this.game;
+    g.fadeLevel = 1; g.fadeColour = '#ffffff';
+    await g.fade(0, 40, '#ffffff');
+    return this.which === 'war' ? this.war() : this.summer();
+  }
+
+  /* the ball's flight from (x0, y0) to (x1, y1) over n frames, with an arc */
+  async fly(x0, y0, x1, y1, n, arc = 10) {
+    for (let i = 0; i <= n; i++) { const k = i / n; this.ball = { x: x0 + (x1 - x0) * k, y: y0 + (y1 - y0) * k - Math.sin(k * Math.PI) * arc }; await this.game.wait(1); }
+  }
+  async summer() {
+    const g = this.game, E = 'ENYA', you = (s) => g.say(s, { name: this.name, voice: 'hero' });
+    playMusic('dream');
+    this.label = 1;
+    await g.wait(60);
+    this.label = 0;
+    await g.say('A warm kerb. A blue sky. The smell of cut grass. You know this street...');
+    await g.say('This is the best day EVER. No school, no chores, nothing to do all day but this.', { name: E });
+    await you('My lolly is melting all down my arm.');
+    await g.say('Lick faster, then! Ha!', { name: E });
+    await g.say('...sitting on the kerb outside her house, doing nothing at all... the best days of your life...', { name: this.name, mutter: true });
+    await remember(g, 'summer');
+    await g.say("Right. Bet you can't beat me at wall-ball.", { name: E });
+    // up, and over to the gable wall
+    const H0 = this.kids.hero, E0 = this.kids.enya;
+    H0.pose = E0.pose = 'stand';
+    await g.wait(10);
+    for (let i = 0; i < 30; i++) { H0.x += (62 - 70) / 30; E0.x += (44 - 92) / 30; await g.wait(1); }
+    H0.flip = E0.flip = true;   // facing the wall
+    await g.say('She pulls a scruffy old tennis ball out of her pocket. TIP: press A to hit the ball back when it comes to you!');
+    // the rally: she hits, it bounces off the wall, comes to you: hit it back!
+    let hits = 0, tries = 0;
+    while (hits < 3 && tries < 6) {
+      tries++;
+      E0.pose = 'swing'; sfx.thwack(); await this.fly(E0.x - 4, 100, 31, 74, 12, 6); E0.pose = 'stand';
+      sfx.thwack(); await this.fly(31, 74, 50, 114, 10, 2);
+      sfx.land(); await this.fly(50, 114, H0.x - 2, 100, 10, 12);
+      this.swingWanted = true; this.swung = false; this.prompt = true;
+      for (let i = 0; i < 22 && !this.swung; i++) { this.ball.x += 0.7; this.ball.y += 0.4; await g.wait(1); }
+      this.swingWanted = false; this.prompt = false;
+      if (this.swung) {
+        hits++; H0.pose = 'swing'; sfx.thwack();
+        await this.fly(this.ball.x, this.ball.y, 31, 76, 12, 6); H0.pose = 'stand';
+        sfx.thwack(); await this.fly(31, 76, 40, 112, 8, 2);
+        sfx.land(); await this.fly(40, 112, E0.x - 2, 100, 8, 10);
+        if (hits === 1) g.toast('Nice shot!', C.gold);
+      } else {
+        await this.fly(this.ball.x, this.ball.y, 130, 118, 18, 4);
+        this.ball = null;
+        await g.say(['Butterfingers!', 'Ha! Too slow!', 'Watch the BALL, not me!'][tries % 3], { name: E });
+      }
+    }
+    // the big one: far too hard, right up onto Mr Nolan's roof
+    await you('Right. Watch THIS one.');
+    E0.pose = 'swing'; sfx.thwack(); await this.fly(E0.x - 4, 100, 31, 74, 12, 6); E0.pose = 'stand';
+    sfx.thwack(); await this.fly(31, 74, 52, 112, 10, 2); await this.fly(52, 112, H0.x - 2, 100, 10, 12);
+    H0.pose = 'swing'; sfx.thwack(); g.shake(6, 1);
+    await this.fly(H0.x - 2, 100, 76, 44, 26, 40);
+    H0.pose = 'stand';
+    sfx.bump(); await this.fly(76, 44, 82, 40, 8, 4); sfx.bump(); await this.fly(82, 40, 88, 48, 8, 3);
+    sfx.thoom(); g.shake(10, 2); this.bang = 30;
+    this.ball = { x: 88, y: 49 };
+    await g.say('THUNK. The ball rolls along the slates... and drops into Mr Nolan\'s gutter.');
+    await g.say('Uh-oh.', { name: E });
+    sfx.door();
+    for (let i = 0; i <= 10; i++) { this.win = i / 10; await g.wait(1); }
+    this.nolan = true; this.bubble = 70; sfx.encounter();
+    await g.wait(20);
+    await g.say("OI! SH!TE! Not AGAIN! That's the third ball on me roof this WEEK!", { name: 'MR NOLAN' });
+    await g.say('#$%&! Ya little gurriers! It\'s MINE now, d\'ye hear me?!', { name: 'MR NOLAN' });
+    await g.say('RUN!', { name: E });
+    H0.pose = E0.pose = 'run'; H0.flip = E0.flip = false;
+    for (let i = 0; i < 70; i++) { H0.x += 2.2; E0.x += 2.4; H0.y = 117 - (Math.floor(i / 4) % 2); E0.y = 117 - (Math.floor(i / 4 + 1) % 2); await g.wait(1); }
+    await g.say('Laughter echoes down the street, all the way round the corner.');
+    await g.say('...Mr Nolan. He never gave a single ball back. She laughed so hard she cried...', { name: this.name, mutter: true });
+    await remember(g, 'squash');
+    await g.fade(1, 40, '#ffffff');
+    this.finish();
+  }
+  async war() {
+    const g = this.game, E = 'ENYA';
+    playMusic('vision');
+    await g.say('You are dreaming of the war again.');
+    for (const y of ['YEAR 1', 'YEAR 2', 'YEAR 4', 'YEAR 7', 'YEAR ?']) {
+      this.year = { s: y, t: 0 }; sfx.heartbeat(); g.shake(8, 1);
+      await g.wait(50);
+    }
+    this.year = null;
+    await g.say('Sirens. Searchlights. Orders shouted in the dark. You stopped counting the days, then the months, then the years.');
+    await g.say('...how long was I gone...? Two years...? Ten...? Nobody could ever tell me...', { name: this.name, mutter: true });
+    await remember(g, 'years');
+    await g.say('Then, through the smoke, a little light. Bright as a diamond.');
+    sfx.flash();
+    for (let i = 0; i <= 60; i++) { this.dawn = i / 60; await g.wait(1); }
+    await g.say('Wherever the stars take you...', { name: E });
+    await g.say("...I'll find you.", { name: this.name, voice: 'hero' });
+    await g.fade(1, 40, '#ffffff');
+    this.finish();
+  }
+
+  draw(ctx) {
+    if (this.which === 'war') return this.drawWar(ctx);
+    const t = this.t;
+    // the whole street sits 22 pixels up, so the kids on the kerb stay above the dialogue box
+    ctx.save();
+    ctx.translate(0, -22);
+    // the summer sky, the sun, slow clouds
+    for (let y = -22; y < 60; y++) { ctx.fillStyle = DAY.sky[Math.max(0, Math.min(2, Math.floor((y + 10) / 22)))]; ctx.fillRect(0, y, W, 1); }
+    disc(ctx, 136, 14, 8, '#fff2a0'); disc(ctx, 136, 14, 6, '#ffe060');
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + t / 90; ctx.fillStyle = '#fff2a0'; ctx.fillRect(Math.round(136 + Math.cos(a) * 12), Math.round(14 + Math.sin(a) * 12), 1, 1); }
+    for (let i = 0; i < 3; i++) { const cx = ((i * 70 + t * 0.15) % (W + 60)) - 30, cy = 10 + i * 9; ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(cx), cy, 22, 4); ctx.fillRect(Math.round(cx) + 4, cy - 3, 12, 3); }
+    // the gable end (the wall you hit the ball against) and the row of houses
+    ctx.fillStyle = DAY.brick; ctx.fillRect(0, 36, 31, 60);
+    for (let y = 22; y < 36; y++) { const w = Math.round(((y - 22) / 14) * 15); ctx.fillRect(15 - w, y, w * 2 + 1, 1); }
+    ctx.fillStyle = DAY.brick2; for (let y = 40; y < 96; y += 4) for (let x = (y / 4) % 2 ? 0 : 4; x < 31; x += 8) ctx.fillRect(x, y, 1, 3);
+    for (let y = 39; y < 96; y += 4) ctx.fillRect(0, y, 31, 1);
+    ctx.fillStyle = '#6a2a24'; ctx.fillRect(10, 16, 5, 8); ctx.fillStyle = DAY.brick2; ctx.fillRect(9, 15, 7, 2);
+    for (let h = 0; h < 4; h++) {
+      const x = 31 + h * 33;
+      ctx.fillStyle = h % 2 ? '#c8705a' : DAY.brick; ctx.fillRect(x, 50, 33, 46);
+      ctx.fillStyle = DAY.slate; ctx.fillRect(x - 1, 38, 35, 13); ctx.fillStyle = DAY.slate2; for (let y = 40; y < 50; y += 3) ctx.fillRect(x, y, 33, 1);
+      ctx.fillStyle = '#3a3a4a'; ctx.fillRect(x - 1, 50, 35, 2);   // the gutter
+      ctx.fillStyle = DAY.brick2; ctx.fillRect(x + 24, 30, 5, 9);
+      const upWin = h === 1 ? this.win : 0;
+      ctx.fillStyle = DAY.frame; ctx.fillRect(x + 6, 56, 12, 12); ctx.fillStyle = upWin > 0 ? '#2a2a3a' : DAY.glass; ctx.fillRect(x + 7, 57, 10, 10);
+      if (upWin > 0 && upWin < 1) { ctx.fillStyle = DAY.glass; ctx.fillRect(x + 7, 57, Math.round(10 * (1 - upWin)), 10); }
+      ctx.fillStyle = DAY.frame; ctx.fillRect(x + 4, 74, 12, 12); ctx.fillStyle = DAY.glass; ctx.fillRect(x + 5, 75, 10, 10); ctx.fillStyle = DAY.frame; ctx.fillRect(x + 10, 75, 1, 10);
+      ctx.fillStyle = ['#2f8a5a', '#c8402a', '#3a5ac8', '#ffd23a'][h]; ctx.fillRect(x + 20, 74, 9, 22); ctx.fillStyle = '#ffd23a'; ctx.fillRect(x + 27, 85, 1, 1);
+    }
+    if (this.nolan) {   // MR NOLAN, leaning out of his window, a "!" over his head
+      ctx.drawImage(spr(CH.NOLAN, CH.NOLAN_CROSS), 31 + 33 + 4, 56);
+      if (this.bubble > 0) { this.bubble--; ctx.fillStyle = '#ffffff'; ctx.fillRect(74, 41, 9, 11); ctx.fillStyle = '#1a0f2e'; ctx.fillRect(74, 40, 9, 1); ctx.fillRect(74, 52, 9, 1); ctx.fillRect(73, 41, 1, 11); ctx.fillRect(83, 41, 1, 11); text(ctx, '!', 77, 43, '#e8102e'); }
+    }
+    // the pavement, the kerb, the road, a lamp post
+    ctx.fillStyle = DAY.pave; ctx.fillRect(0, 96, W, 20);
+    ctx.fillStyle = DAY.pave2; for (let x = 0; x < W; x += 16) ctx.fillRect(x, 96, 1, 20); ctx.fillRect(0, 106, W, 1);
+    ctx.fillStyle = DAY.kerb; ctx.fillRect(0, 116, W, 4); ctx.fillStyle = DAY.road; ctx.fillRect(0, 120, W, 50);
+    ctx.fillStyle = '#e8e8f0'; for (let x = 4; x < W; x += 24) ctx.fillRect(x, 140, 12, 1);
+    ctx.fillStyle = '#2a2a3a'; ctx.fillRect(146, 58, 2, 58); ctx.fillRect(142, 56, 8, 3); ctx.fillStyle = '#fff2a0'; ctx.fillRect(143, 59, 6, 2);
+    // two kids
+    for (const [who, pal] of [['hero', CH.KID_HERO_PAL], ['enya', CH.KID_ENYA_PAL]]) {
+      const k = this.kids[who];
+      ctx.drawImage(spr(CH.KID[who][k.pose], pal, k.flip), Math.round(k.x - 8), Math.round(k.y - 16));
+    }
+    if (this.ball) { const bx = Math.round(this.ball.x), by = Math.round(this.ball.y); ctx.fillStyle = '#1a0f2e'; ctx.fillRect(bx - 1, by - 1, 4, 4); ctx.fillStyle = '#d8ff3a'; ctx.fillRect(bx, by, 2, 2); ctx.fillStyle = '#ffffff'; ctx.fillRect(bx, by, 1, 1); }
+    if (this.prompt && t % 16 < 10) text(ctx, 'A!', Math.round(this.kids.hero.x) - 3, 92, C.gold, { outline: '#1a0f2e' });
+    ctx.restore();
+    // the dreamy glow round the edges
+    ctx.fillStyle = 'rgba(255,230,180,0.14)'; ctx.fillRect(0, 0, W, H);
+    for (let i = 0; i < 6; i++) { ctx.fillStyle = 'rgba(255,248,230,' + (0.22 - i * 0.035).toFixed(3) + ')'; ctx.fillRect(i, i, W - i * 2, 1); ctx.fillRect(i, H - 1 - i, W - i * 2, 1); ctx.fillRect(i, i, 1, H - i * 2); ctx.fillRect(W - 1 - i, i, 1, H - i * 2); }
+    if (this.label) { box(ctx, 30, 36, 100, 22, { bg: C.bg2 }); text(ctx, '· a memory ·', W / 2, 40, '#ffe6a0', { align: 'center' }); text(ctx, 'a summer, long ago', W / 2, 49, C.dim, { align: 'center' }); }
+  }
+  drawWar(ctx) {
+    const t = this.t, d = this.dawn;
+    // a night sky glowing red at the horizon (or a dawn, as her light breaks through)
+    for (let y = 0; y < H; y++) {
+      const k = y / H;
+      ctx.fillStyle = d > 0 ? (k < 0.5 ? '#3a2a6a' : k < 0.8 ? '#c86a8a' : '#ffc8a0') : (k < 0.5 ? '#0a0614' : k < 0.8 ? '#2a0a1a' : '#6a1a1a');
+      ctx.fillRect(0, y, W, 1);
+    }
+    if (d > 0) { ctx.globalAlpha = 1 - d; for (let y = 0; y < H; y++) { const k = y / H; ctx.fillStyle = k < 0.5 ? '#0a0614' : k < 0.8 ? '#2a0a1a' : '#6a1a1a'; ctx.fillRect(0, y, W, 1); } ctx.globalAlpha = 1; }
+    // searchlights sweeping (out of step with each other), and far-off flashes
+    const ground = 96;   // above the dialogue box
+    if (d < 1) for (let i = 0; i < 2; i++) {
+      const a = -Math.PI / 2 + Math.sin(t / (44 + i * 23) + i * 2.6) * 0.55 + (i ? 0.35 : -0.35), bx = 28 + i * 104;
+      ctx.globalAlpha = 0.11 * (1 - d); ctx.fillStyle = '#fff2c0';
+      for (let r = 0; r < 110; r += 1) { const w = Math.round(r / 14); ctx.fillRect(Math.round(bx + Math.cos(a) * r) - w, Math.round(ground + Math.sin(a) * r), w * 2 + 1, 1); }
+      ctx.globalAlpha = 1;
+    }
+    if (d < 1 && (t % 47 < 6 || t % 83 < 4)) { const fx = 20 + ((t * 37) % 120), fy = ground - 26 + ((t * 13) % 14); ctx.globalAlpha = 1 - d; disc(ctx, fx, fy, 4 + (t % 6), '#ffd23a'); disc(ctx, fx, fy, 2, '#ffffff'); ctx.globalAlpha = 1; }
+    // the city, in silhouette
+    ctx.fillStyle = d > 0.5 ? '#3a2a4a' : '#05020a';
+    for (let i = 0; i < 12; i++) { const bw = 10 + Math.floor(hash(i, 0, 61) * 10), bh = 16 + Math.floor(hash(i, 1, 61) * 26), bx = i * 14 - 4; ctx.fillRect(bx, ground - bh, bw, bh); }
+    ctx.fillRect(0, ground, W, H - ground);
+    ctx.fillStyle = '#ffd23a'; for (let i = 0; i < 20; i++) if ((t >> 5) + i * 7 & 1) ctx.fillRect(Math.floor(hash(i, 2, 61) * W), ground - 30 + Math.floor(hash(i, 3, 61) * 26), 1, 1);
+    // embers drifting up
+    for (let i = 0; i < 14; i++) { const ex = (hash(i, 4, 61) * W + Math.sin((t + i * 20) / 30) * 6) % W, ey = H - ((t * (0.3 + hash(i, 5, 61) * 0.5) + i * 23) % H); ctx.fillStyle = i % 3 ? '#ff8a1e' : '#ffd23a'; ctx.globalAlpha = 1 - d; ctx.fillRect(Math.round(ex), Math.round(ey), 1, 1); ctx.globalAlpha = 1; }
+    if (this.year) { const k = Math.min(1, (t % 50) / 10) * Math.min(1, (50 - (t % 50)) / 10); ctx.globalAlpha = Math.max(0.2, k); text(ctx, this.year.s, W / 2, 40, '#e6d8ff', { scale: 2, outline: '#1a0f2e', align: 'center' }); ctx.globalAlpha = 1; }
+    if (d > 0) glint(ctx, W / 2, 50, t, 1 + d);
   }
 }
 

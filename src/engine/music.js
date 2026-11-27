@@ -305,6 +305,85 @@ export const SONGS = {
     ],
   },
 
+  /* ===== Chapter 2 ===== */
+
+  /* The Venom Mire: a slow swamp shuffle, the bass squelching along. Em blues */
+  mire: {
+    bpm: 80,
+    tracks: [
+      { wave: 'p0.25', vol: 0.13, vib: true, notes:
+        'E4 - G4 - A4 Bb4 A4 G4 | E4 - - - D4 - E4 - | G4 - A4 - B4 - D5 B4 | A4 - G4 - E4 - - - | ' +
+        'B4 - - D5 E5 - D5 B4 | A4 - G4 A4 Bb4 - A4 - | G4 - E4 - D4 - G4 - | E4 - - - - - . . ' },
+      { wave: 'p0.125', vol: 0.045, notes: '. . E6 . . . B5 . | . . . G5 . . . . | . . D6 . . B5 . . | . . . . E6 . . . ' },
+      { wave: 'triangle', vol: 0.32, notes:
+        'E2 - E2 G2 A2 - Bb2 B2 | E2 - E2 G2 A2 - G2 E2 | A2 - A2 C3 D3 - C3 A2 | E2 - E2 G2 B2 - A2 G2 | ' +
+        'B1 - B1 D2 E2 - D2 B1 | A1 - A1 C2 E2 - D2 C2 | G1 - G1 B1 D2 - B1 G1 | E2 - B1 - E2 - - - ' },
+      { drums: 'k..hs..hk.k.s..h', vol: 0.13 },
+    ],
+  },
+
+  /* The Jade Lagoon: calm, clear water and a palace of jade. D major pentatonic */
+  lagoon: {
+    bpm: 92,
+    tracks: [
+      { wave: 'p0.125', vol: 0.14, vib: true, notes:
+        'A5 - B5 - D6 - B5 A5 | F#5 - - - E5 - D5 - | E5 - F#5 - A5 - F#5 E5 | D5 - - - - - . . | ' +
+        'B5 - A5 - F#5 - A5 B5 | D6 - - - B5 - A5 - | F#5 - E5 - D5 - E5 F#5 | D5 - - - - - . . ' },
+      { wave: 'p0.25', vol: 0.045, notes: 'D5 F#5 A5 F#5 D5 F#5 A5 F#5 | B4 D5 F#5 D5 B4 D5 F#5 D5 | G4 B4 D5 B4 G4 B4 D5 B4 | A4 C#5 E5 C#5 A4 C#5 E5 C#5 ' },
+      { wave: 'triangle', vol: 0.28, notes: 'D3 - A2 - D3 - A2 - | B2 - F#2 - B2 - F#2 - | G2 - D3 - G2 - D3 - | A2 - E3 - A2 - E3 - ' },
+      { drums: 'k...h...s...h.h.', vol: 0.1 },
+    ],
+  },
+
+  /* The Dragon Kings: a mighty battle. E minor pentatonic, with a crash of cymbals */
+  dragon: {
+    bpm: 146,
+    tracks: [
+      { wave: 'p0.25', vol: 0.15, notes:
+        'E5 - G5 A5 B5 - A5 G5 | E5 - - D5 E5 - G5 - | A5 - B5 D6 E6 - D6 B5 | A5 - G5 - E5 - D5 - | ' +
+        'E5 G5 A5 - B5 - D6 - | E6 - D6 B5 A5 - G5 - | A5 - G5 E5 D5 - E5 - | E5 - - - B4 - D5 - ' },
+      { wave: 'p0.125', vol: 0.05, notes: 'E4 B4 E5 B4 E4 B4 E5 B4 | C4 G4 C5 G4 C4 G4 C5 G4 | D4 A4 D5 A4 D4 A4 D5 A4 | B3 F#4 B4 F#4 B3 F#4 B4 F#4 ' },
+      { wave: 'triangle', vol: 0.34, notes: 'E2 E2 E3 E2 E2 E2 G2 A2 | C2 C2 C3 C2 C2 C2 D2 E2 | D2 D2 D3 D2 D2 D2 E2 F#2 | B1 B1 B2 B1 D2 D2 D3 D2 ' },
+      { drums: 'c.skk.s.k.skkss. | k.skk.s.k.skkss. | c.skk.s.k.skkss. | k.skk.s.k.sksscs', vol: 0.19 },
+    ],
+  },
+
+  /* The Withered Deep: grey and silent. A few lonely notes, and a slow heartbeat. Am */
+  deep: {
+    bpm: 66,
+    tracks: [
+      { wave: 'p0.5', vol: 0.085, vib: true, notes: 'A4 - - - - - C5 - | B4 - - - F4 - - - | A4 - - - E5 - D5 - | C5 - - - B4 - - - ' },
+      { wave: 'p0.125', vol: 0.035, notes: 'A3 E4 A4 E4 A3 E4 A4 E4 | F3 C4 F4 C4 F3 C4 F4 C4 | D3 A3 D4 A3 D3 A3 D4 A3 | E3 B3 E4 B3 G#3 B3 E4 B3 ' },
+      { wave: 'triangle', vol: 0.26, notes: 'A2 - - - - - - - | F2 - - - - - - - | D2 - - - - - - - | E2 - - - - - - - ' },
+      { drums: 'k..k............', vol: 0.14 },
+    ],
+  },
+
+  /* CODY's theme: a cheeky little swing, for a wise old cat who knows it. F */
+  cody: {
+    bpm: 132, div: 3,
+    tracks: [
+      { wave: 'p0.25', vol: 0.15, notes:
+        'F5 - A5 C6 - A5 | Bb5 - G5 E5 - C5 | F5 - A5 C6 - D6 | C6 - - - - - | ' +
+        'A5 - C6 Bb5 - G5 | A5 - F5 G5 - E5 | F5 - D5 C5 - A4 | C5 - - F5 - - ' },
+      { wave: 'p0.125', vol: 0.05, notes: '. A4 C5 . A4 C5 | . Bb4 D5 . Bb4 D5 | . A4 C5 . A4 C5 | . G4 Bb4 . G4 Bb4 ' },
+      { wave: 'triangle', vol: 0.3, notes: 'F2 - - A2 - - | Bb2 - - C3 - - | F2 - - A2 - - | C3 - - E2 - - | D2 - - F2 - - | G2 - - Bb2 - - | C3 - - C2 - - | F2 - - C3 - - ' },
+      { drums: 'k..h.sk.hh.s', vol: 0.13 },
+    ],
+  },
+
+  /* A dream on the COMET: her tune, played like a music box. G  Em  C  D */
+  dream: {
+    bpm: 84,
+    tracks: [
+      { wave: 'p0.125', vol: 0.14, vib: true, notes:
+        'B5 - D6 E6 D6 - B5 A5 | G5 - A5 B5 D6 - - - | E6 - D6 B5 A5 - G5 A5 | B5 - - - - - . . | ' +
+        'C6 - B5 A5 G5 - E5 G5 | A5 - G5 E5 D5 - - - | E5 - G5 A5 B5 - D6 B5 | G5 - - - - - . . ' },
+      { wave: 'p0.25', vol: 0.04, notes: 'G4 B4 D5 B4 G4 B4 D5 B4 | E4 G4 B4 G4 E4 G4 B4 G4 | C4 E4 G4 E4 C4 E4 G4 E4 | D4 F#4 A4 F#4 D4 F#4 A4 F#4 ' },
+      { wave: 'triangle', vol: 0.26, notes: 'G2 - - - D3 - - - | E2 - - - B2 - - - | C3 - - - G2 - - - | D3 - - - A2 - - - ' },
+    ],
+  },
+
   /* Mossa's shop */
   shop: {
     bpm: 112,
@@ -369,6 +448,22 @@ export const JINGLES = {
       { wave: 'triangle', vol: 0.3, notes: 'C3 - - - G2 - - - | C3 - - - . . . . ' },
     ],
   },
+  /* her tune, the one she hummed on the walk home: whistled, hummed, and hummed with NOVA (a growly third below) */
+  whistle: {
+    bpm: 100,
+    tracks: [{ wave: 'sine', vol: 0.22, vib: true, notes: 'B5 - D6 E6 D6 - B5 A5 | G5 - A5 B5 D6 - - - | E6 - D6 B5 A5 - G5 A5 | B5 - - - - - . . ' }],
+  },
+  hum: {
+    bpm: 96,
+    tracks: [{ wave: 'triangle', vol: 0.3, vib: true, notes: 'B4 - D5 E5 D5 - B4 A4 | G4 - A4 B4 D5 - - - | E5 - D5 B4 A4 - G4 A4 | B4 - - - - - . . ' }],
+  },
+  humNova: {
+    bpm: 96,
+    tracks: [
+      { wave: 'triangle', vol: 0.26, vib: true, notes: 'B4 - D5 E5 D5 - B4 A4 | G4 - A4 B4 D5 - - - | E5 - D5 B4 A4 - G4 A4 | B4 - - - - - . . ' },
+      { wave: 'p0.5', vol: 0.07, vib: true, notes: 'G3 - B3 C4 B3 - G3 F#3 | E3 - F#3 G3 B3 - - - | C4 - B3 G3 F#3 - E3 F#3 | G3 - - - - - . . ' },
+    ],
+  },
 };
 
 /* names for the soundboard and the sound test */
@@ -395,4 +490,10 @@ export const TRACKS = [
   ['boss', 'Rustclaw'],
   ['victory', 'Victory!'],
   ['chapter', 'Chapter complete'],
+  ['cody', "Cody's swing"],
+  ['dream', 'A dream on the COMET'],
+  ['mire', 'The Venom Mire'],
+  ['lagoon', 'The Jade Lagoon'],
+  ['dragon', 'The Dragon Kings'],
+  ['deep', 'The Withered Deep'],
 ];

@@ -32,10 +32,12 @@ export function migrate(st) {
   st.memories = st.memories || [];
   st.tubes = st.tubes || {};
   st.captures = st.captures || 0;
-  st.bag = Object.assign({ berry: 0, tonic: 0, melon: 0, tube: 0 }, st.bag || {});
+  st.bag = Object.assign({ berry: 0, tonic: 0, melon: 0, tube: 0, catnip: 0 }, st.bag || {});
   st.furyT = st.furyT || 0;
-  if (st.pet) st.pet.moves = movesAt(st.pet.species, st.pet.variant, st.pet.lv);
-  st.v = 2;
+  st.parts = st.parts || {};
+  // v3 (Chapter 2): CODY can teach a move, which is kept as well as the ones learned by level
+  if (st.pet) { st.pet.taught = st.pet.taught || []; st.pet.moves = movesAt(st.pet.species, st.pet.variant, st.pet.lv, st.pet.taught); }
+  st.v = 3;
   return st;
 }
 

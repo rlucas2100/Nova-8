@@ -1,6 +1,7 @@
 /* Battle sprites, drawn from shapes with the painter (then outlined and shaded like hand-made pixel
    art). Companions face right, wild creatures face left. All original designs. */
 import { painter } from '../engine/pixel.js';
+import { CODY_PAL } from './chars.js';
 
 /* a fat curved stroke: dots of radius r along a quadratic curve */
 function stroke(p, x0, y0, cx, cy, x1, y1, r, c, steps = 24) {
@@ -360,6 +361,138 @@ function shroomboom() {   // a mushroom drummer
   return p.rows();
 }
 
+/* ---------- CODY, the wise white cat, with his staff (an ally, so he faces right) ---------- */
+function cody(shades = false) {
+  const p = painter(32, 32);
+  p.rect(26, 4, 2, 27, 'B'); p.rect(27, 4, 1, 27, 'b');                                       // the staff
+  p.rect(26, 8, 2, 1, 'Y'); p.rect(26, 27, 2, 1, 'Y'); p.ellipse(27, 2.5, 2.2, 2.2, 'Y'); p.set(26, 2, 'y'); p.set(27, 1, 'y');
+  stroke(p, 10, 27, 1, 25, 4, 13, (t) => 1.9 - t * 0.7, 'W');                                 // tail, curling up behind
+  p.ellipse(15, 22.5, 7.4, 7, 'W');                                                           // body
+  p.ellipse(11, 29.6, 3.2, 1.9, 'W'); p.ellipse(19, 29.6, 3.2, 1.9, 'W');                     // feet
+  stroke(p, 20, 20, 23, 17, 25, 16, 1.5, 'W'); p.ellipse(26.5, 16, 1.9, 2, 'W');              // paw round the staff
+  p.ellipse(16, 10, 9, 7.4, 'W');                                                             // head
+  p.poly([[7.5, 7], [8.5, -0.5], [13.5, 4]], 'W'); p.poly([[18.5, 4], [24, -0.5], [24.5, 8]], 'W');   // ears
+  p.poly([[9, 5], [9.5, 1.5], [12, 4]], 'P'); p.poly([[20, 4], [23, 1.5], [23, 6]], 'P');
+  p.poly([[7.5, 10], [4.5, 12], [7.5, 14]], 'W');                                             // cheek fluff
+  p.poly([[10, 16.5], [22, 16.5], [16, 21]], 'R'); p.line(12, 17, 20, 17, 'r');                // neckerchief
+  p.shade('W', 'w', 1, 1, 2);
+  p.shade('R', 'r', 0, 1, 1);
+  if (shades) {   // frost-glass shades from the White Dragon: gold rims, a cool blue shine
+    p.ellipse(13.5, 10, 2.8, 2, 'G'); p.ellipse(20.5, 10, 2.8, 2, 'G'); p.line(16, 9, 18, 9, 'Y');
+    p.line(11, 8, 16, 8, 'Y'); p.line(18, 8, 23, 8, 'Y');
+    p.set(12, 9, 'g'); p.set(13, 9, 'g'); p.set(19, 9, 'g'); p.set(20, 9, 'g');
+  } else {        // half-lidded, wise and a little sly, looking your way
+    p.ellipse(13.5, 10.5, 1.7, 1.9, 'E'); p.ellipse(20.5, 10.5, 1.7, 1.9, 'E');
+    p.set(14, 10, 'e'); p.set(14, 11, 'e'); p.set(21, 10, 'e'); p.set(21, 11, 'e');
+    p.line(12, 9, 15, 9, 'K'); p.line(19, 9, 22, 9, 'K');
+  }
+  p.set(17, 13, 'N'); p.set(18, 13, 'N'); p.set(17, 14, 'N');                                 // nose
+  p.line(15, 15, 16, 16, 'K'); p.set(17, 15, 'K'); p.line(18, 16, 19, 15, 'K');                // a cheeky "w" smile
+  p.ellipse(10, 23, 1.8, 1.6, 'w');                                                           // the other paw, on his tummy
+  p.set(10, 30, 'P'); p.set(18, 30, 'P');                                                     // toe beans
+  p.outline('K');
+  p.line(8, 13, 3, 12, 'w'); p.line(8, 14, 3, 16, 'w'); p.line(23, 13, 26, 12, 'w');          // whiskers, poking out past his cheeks
+  return p.rows();
+}
+
+/* ---------- the Venom Mire: snakes, and the giant one that lives in the ooze ---------- */
+function hissling() {   // a little striped snake, coiled up and hissing
+  const p = painter(32, 32);
+  p.ellipse(18, 26.5, 10.5, 4, 'G'); p.ellipse(19, 22.5, 7.5, 3.2, 'G');                      // coils
+  stroke(p, 15, 21, 10, 18, 9, 11, (t) => 2.6 - t * 0.6, 'G');                                // neck
+  p.ellipse(7.5, 9.5, 4.6, 3.4, 'G');                                                         // head
+  p.recolour('G', 'C', (x, y) => (y === 28 || y === 24) && x > 9);                             // pale belly scales
+  p.shade('G', 'g', 0, 1, 1);
+  for (const x of [12, 17, 22, 27]) p.line(x, 23, x - 1, 29, 'Y');                            // yellow bands
+  p.line(10, 14, 12, 15, 'Y'); p.line(11, 18, 13, 19, 'Y');
+  p.set(5, 8, 'R'); p.set(6, 8, 'R'); p.set(5, 7, 'K'); p.set(6, 7, 'K');                       // a narrow red eye
+  p.line(3, 11, 0, 11, 'T'); p.set(0, 10, 'T'); p.set(0, 12, 'T');                            // flickering tongue
+  p.outline('K');
+  return p.rows();
+}
+function spitviper() {   // a hooded viper, spitting glowing venom
+  const p = painter(32, 32);
+  p.ellipse(19, 27, 11, 3.6, 'G'); p.ellipse(20, 23, 7, 3, 'G');                              // coils
+  stroke(p, 16, 22, 14, 19, 13, 12, (t) => 2.8 - t * 0.4, 'G');                               // neck
+  p.ellipse(13, 13, 5, 6.5, 'G');                                                             // the hood, flared
+  p.ellipse(9, 6, 4, 3, 'G');                                                                 // head
+  p.shade('G', 'g', 0, 1, 1);
+  p.ellipse(13, 13.5, 2.6, 4.5, 'H'); p.ellipse(13, 13.5, 1.2, 2.6, 'h');                      // the pale mark on the hood
+  p.set(11, 11, 'D'); p.set(15, 11, 'D');
+  for (const x of [13, 18, 23, 28]) p.line(x, 24, x - 1, 30, 'H');
+  p.set(7, 5, 'R'); p.set(8, 5, 'R'); p.set(7, 4, 'K'); p.set(8, 4, 'K');                       // a mean red eye
+  p.line(5, 8, 7, 8, 'K'); p.set(6, 9, 'W');                                                  // fangs
+  p.ellipse(2, 9, 1.4, 1.2, 'V'); p.set(0, 11, 'V'); p.set(3, 12, 'V');                        // a glob of venom
+  p.outline('K');
+  return p.rows();
+}
+function oozefang() {   // a giant serpent rising out of the ooze, the WARP COIL caught in its coils
+  const p = painter(48, 40);
+  p.ellipse(25, 36.5, 22, 3.6, 'O'); p.ellipse(10, 35, 6, 2.6, 'O'); p.ellipse(40, 34.5, 7, 3, 'O');   // the ooze
+  stroke(p, 38, 36, 44, 22, 32, 20, (t) => 4.8 - t * 0.4, 'G');                               // the body, in an S
+  stroke(p, 32, 20, 20, 19, 24, 30, (t) => 4.4 - t * 0.2, 'G');
+  stroke(p, 24, 33, 26, 22, 17, 13, (t) => 4.4 - t * 0.8, 'G');
+  p.ellipse(13, 10.5, 9, 6, 'G'); p.ellipse(6, 13, 5.5, 3.6, 'G');                             // head and jaw
+  p.poly([[9, 5], [7, -0.5], [13, 4.5]], 'S'); p.poly([[15, 4.5], [17, -0.5], [19, 5]], 'S');  // horns
+  p.shade('G', 'g', 0, 1, 2);
+  p.recolour('G', 'C', (x, y) => (x - 26) ** 2 / 64 + (y - 26) ** 2 / 30 < 1 && x < 30 && y > 23);
+  for (const [x, y] of [[36, 27], [41, 22], [33, 21], [22, 23], [25, 30]]) p.ellipse(x, y, 1.2, 1.2, 'Y');   // glowing spots
+  // the WARP COIL, caught round its middle: copper rings and a glowing cyan core
+  for (const x of [27, 30, 33]) p.line(x, 15, x + 1, 25, 'M');
+  p.ellipse(30.5, 20, 1.6, 2.5, 'c'); p.set(30, 19, 'W');
+  p.ellipse(8, 9.5, 2, 1.6, 'R'); p.set(7, 9, 'Y');                                           // a burning eye
+  p.line(1, 15, 9, 15, 'K'); p.line(3, 15, 3, 18, 'W'); p.line(7, 15, 7, 18, 'W');            // fangs, dripping
+  p.set(3, 19, 'O'); p.set(7, 20, 'O');
+  for (const [x, y] of [[5, 33], [17, 34], [33, 35], [44, 32]]) { p.set(x, y, 'o'); p.set(x + 1, y - 1, 'o'); }   // bubbles
+  p.outline('K');
+  return p.rows();
+}
+
+/* ---------- the Withered Deep ---------- */
+function witherwisp() {   // a wisp of drained life: grey, cold, and very sad about it
+  const p = painter(32, 32);
+  p.poly([[16, 1], [24, 11], [25, 19], [21, 26], [27, 31], [17, 28], [10, 31], [12, 25], [7, 19], [8, 10]], 'D');
+  p.ellipse(16, 17, 7.5, 7.5, 'D');
+  p.ellipse(15.5, 16, 4.5, 5, 'L');                                                           // the pale heart of it
+  p.shade('D', 'd', 0, 1, 2);
+  p.set(13, 14, 'E'); p.set(13, 15, 'E'); p.set(18, 14, 'E'); p.set(18, 15, 'E');              // sad eyes
+  p.line(12, 12, 14, 13, 'd'); p.line(19, 13, 21, 12, 'd');
+  p.line(14, 19, 17, 19, 'E'); p.set(13, 20, 'E'); p.set(18, 20, 'E');                         // a frown
+  for (const [x, y, c] of [[22, 6, 'f'], [6, 22, 'g'], [26, 24, 'f'], [9, 7, 'g']]) p.set(x, y, c);   // the last flecks of its colour
+  p.outline('K');
+  return p.rows();
+}
+
+/* ---------- the Dragon Kings: one long, whiskered body, three colours (green, black and white) ---------- */
+function dragonKing() {
+  const p = painter(48, 40);
+  // the long body, behind the head: one S-curve, with the tail flicking up at the end
+  stroke(p, 14, 21, 18, 37, 28, 30, (t) => 4.6 - t * 0.4, 'G');
+  stroke(p, 28, 30, 36, 22, 40, 30, (t) => 4.2 - t * 1.2, 'G');
+  stroke(p, 40, 30, 44, 36, 47, 25, (t) => 3 - t * 2, 'G');
+  p.poly([[45, 24], [47, 17], [47.5, 27]], 'M');                                              // tail tuft
+  for (const [x, y] of [[20, 25], [25, 25], [31, 23], [36, 20]]) p.poly([[x - 2, y], [x, y - 4], [x + 2, y]], 'M');   // back fins
+  // legs with golden claws
+  stroke(p, 21, 32, 21, 35, 18, 38, 1.6, 'G'); stroke(p, 34, 27, 37, 31, 36, 37, 1.6, 'G');
+  for (const [x, y] of [[16, 38], [18, 39], [20, 39], [34, 38], [36, 39], [38, 38]]) p.set(x, y, 'Y');
+  // the mane, then the head and the long snout
+  p.poly([[11, 8], [22, 9], [26, 15], [21, 14], [24, 21], [17, 18], [16, 24], [12, 18]], 'M');
+  p.ellipse(11, 14, 7.2, 6, 'G');
+  p.ellipse(4.5, 16.5, 4.6, 3.4, 'G');
+  p.shade('G', 'g', 0, 1, 2);
+  p.recolour('G', 'C', (x, y) => y >= 33 && x > 15 && x < 32);                                // belly scales
+  p.recolour('g', 'C', (x, y) => y >= 34 && x > 15 && x < 32);
+  // antlers, golden
+  p.line(13, 9, 15, 2, 'Y'); p.line(15, 2, 18, 0, 'Y'); p.line(14, 5, 11, 2, 'Y');
+  p.line(9, 9, 8, 3, 'Y'); p.line(8, 5, 5, 3, 'Y');
+  // eye, brow, nostril, mouth, and the long whiskers (barbels)
+  p.rect(8, 12, 3, 2, 'E'); p.set(8, 12, 'W'); p.line(7, 11, 11, 10, 'K');
+  p.set(1, 15, 'K'); p.line(1, 19, 8, 19, 'K'); p.set(2, 20, 'W'); p.set(5, 20, 'W');
+  stroke(p, 2, 17, -4, 22, 2, 29, 0.6, 'Y', 20); stroke(p, 6, 19, 4, 27, 9, 31, 0.6, 'Y', 20);
+  p.outline('K');
+  return p.rows();
+}
+
 const K = '#1a0f2e';
 export const BATTLERS = {
   tiger: { rows: tiger(), pal: { K: '#1d0c05', O: '#ff8a1e', D: '#c9580c', L: '#ffc46e', W: '#fff2da', E: '#7dff2e', N: '#7a2e1c' } },
@@ -382,6 +515,20 @@ export const BATTLERS = {
   grimghoul: { rows: grimghoul(), pal: { K: '#05020a', D: '#2a1640', d: '#160a26', V: '#0a0410', H: '#4a2a6a', C: '#c8b0ff', Y: '#c86aff', W: '#ffffff', v: '#6a3aa8' } },
   bopjelly: { rows: bopjelly(), pal: { K: '#4a0a48', B: '#ff8ad8', b: '#d050a8', l: '#ffe0f6', T: '#ffb8ea', S: '#ffffff', E: K, W: '#ffffff', H: '#5ff2ff' } },
   shroomboom: { rows: shroomboom(), pal: { K: '#1a0a2e', S: '#f2e6ff', s: '#c0a8e0', C: '#a050e0', c: '#6a2ab0', R: '#ffd23a', Y: '#fff2a0', D: '#5ff2ff', W: '#e8c08a', E: K } },
+  cody: { rows: cody(false), pal: CODY_PAL },
+  codyShades: { rows: cody(true), pal: CODY_PAL },
+  hissling: { rows: hissling(), pal: { K: '#0a2008', G: '#6ac83a', g: '#3a8a22', C: '#e8f0a0', Y: '#ffe23a', R: '#ff3a3a', T: '#ff5a8a' } },
+  spitviper: { rows: spitviper(), pal: { K: '#0a1a08', G: '#3aa860', g: '#1f6a3a', H: '#c8d83a', h: '#f0f08a', D: '#8a9a1a', Y: '#ff8a1e', R: '#ff3a3a', W: '#ffffff', V: '#c8ff3a' } },
+  oozefang: { rows: oozefang(), pal: { K: '#0a1406', G: '#5a8a2a', g: '#34601a', C: '#d8e070', S: '#e8e0b0', O: '#c8e83a', o: '#f6ffb0', Y: '#f0ff5a', M: '#d88a3a', c: '#5ff2ff', W: '#ffffff', R: '#ff4a2a' } },
+  witherwisp: { rows: witherwisp(), pal: { K: '#14121a', D: '#8a8698', d: '#5a566a', L: '#d0ccdc', E: '#2a2638', f: '#5fe07a', g: '#ff8ad8' } },
+  dragonKing: { rows: dragonKing(), pal: { K: '#062012', G: '#2fae5a', g: '#1b7a3c', C: '#f0e6b0', M: '#ff9a3a', Y: '#ffd23a', E: '#ff3a3a', W: '#ffffff' } },
+  blackDragon: { rows: null, pal: { K: '#05020a', G: '#2e2a3e', g: '#18141f', C: '#5a4a6e', M: '#6a3aa8', Y: '#8a7a9a', E: '#c86aff', W: '#ffffff' } },
+  whiteDragon: { rows: null, pal: { K: '#1a2a3a', G: '#eef6ff', g: '#b8d0e8', C: '#ffffff', M: '#8fd8ff', Y: '#c8e8ff', E: '#2a8ad8', W: '#ffffff' } },
+  // the Black Dragon once the shadow has left him: warm gold eyes, a deep green mane
+  blackDragonCalm: { rows: null, pal: { K: '#05020a', G: '#2e2a3e', g: '#18141f', C: '#6a5a4e', M: '#2f8a5a', Y: '#ffd23a', E: '#ffd23a', W: '#ffffff' } },
 };
+BATTLERS.blackDragon.rows = BATTLERS.dragonKing.rows;
+BATTLERS.blackDragonCalm.rows = BATTLERS.dragonKing.rows;
+BATTLERS.whiteDragon.rows = BATTLERS.dragonKing.rows;
 BATTLERS.dragonBlue.rows = BATTLERS.dragonRed.rows;
 BATTLERS.thornAlpha.rows = BATTLERS.thornback.rows;

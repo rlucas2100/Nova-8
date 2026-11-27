@@ -81,6 +81,75 @@ for (let i = 0; i < 160 && (await top()) !== 'World'; i++) { await key('Space', 
 await sleep(800);
 }
 
+// ===== Chapter 2 =====
+// the Venom Mire: CODY's staff across the gap in the old bridge, OOZEFANG waiting on the far bank
+if (want('mire')) {
+  await G(`void (() => { const g = ${game}; Object.assign(g.state.flags, { chapter1: true, 'enya-gone': true, ch2: true, 'mire-intro': true, 'staff-bridge': true, 'met-cody': true }); })()`);
+  await go('mire', 29, 15, 'right');
+  await G(`void (() => { const w = (${game}).top; w.addNpc({ id: 'cody', art: 'cody', x: 26, y: 14, dir: 'right', bare: true }); w.camShift.x = 16; })()`);
+  await sleep(600); await grab('mire');
+}
+// the Jade Lagoon: the DRAGON KING's courtyard, CODY in his new shades, the WHITE DRAGON, the gong and the treasure
+if (want('lagoon')) {
+  await G(`void (() => { const g = ${game}; Object.assign(g.state.flags, { chapter1: true, 'enya-gone': true, ch2: true, 'mire-done': true, 'lagoon-intro': true, 'palace-scene': true, gong: true, 'cody-shades': true }); })()`);
+  await go('lagoon', 25, 10, 'up');
+  await G(`void (() => { const w = (${game}).top; w.camShift.y = -26; })()`);
+  await sleep(600); await grab('lagoon');
+}
+// the Withered Deep: grey and silent, and the BLACK DRAGON coiled before the great dead tree
+if (want('deep')) {
+  await G(`void (() => { const g = ${game}; Object.assign(g.state.flags, { 'deep-intro': true, 'deep-visited': true }); })()`);
+  await go('deep', 29, 13, 'up');
+  await G(`void (() => { const w = (${game}).top; w.camShift.y = -54; })()`);
+  await sleep(600); await grab('deep');
+}
+// CODY's staff: "EXTEND!", right across the battlefield into the BLACK DRAGON
+if (want('cody')) {
+  await G(`void (() => { const g = ${game}; Object.assign(g.state.flags, { chapter1: true, 'enya-gone': true, 'cody-shades': true }); })()`);
+  await G(`void (${game}).top.run((g, w) => w.battle({ species: 'blackDragon', lv: 16, cody: true, music: 'dragon', bg: 'withered' }))`);
+  for (let i = 0; i < 40 && (await top()) !== 'Menu'; i++) { await key('Space', 30); await sleep(150); }
+  await G(`void (() => { const b = ${battle}; b.codyN = 0; b.foe.hp = b.foe.maxHp; b.foe.def = 999; b.me.def = 999; b.me.hp = b.me.maxHp; })()`);
+  await key('Space'); await sleep(300); await key('Space');   // FIGHT, the first move
+  for (let i = 0; i < 80 && !(await G(`(${battle} || { fx: [] }).fx.some((f) => f.k === 'staffx')`)); i++) { await key('Space', 30); await sleep(100); }
+  await waitFor(`(() => { const b = ${battle}; const f = b && b.fx.find((q) => q.k === 'staffx'); return f && f.x1 > 100; })()`, 300, 5);
+  await grab('cody');
+  await G(`void (() => { const b = ${battle}; if (b) { b.foe.hp = 1; b.foe.def = 10; } })()`);
+  for (let i = 0; i < 300 && (await top()) !== 'World'; i++) { await key('Space', 30); await sleep(110); }
+  await sleep(800);
+}
+// NOVA's FIRE TIGER RING
+if (want('firering')) {
+  await G(`void (() => { const p = (${game}).state.pet; if (!p.taught.includes('firering')) { p.taught.push('firering'); p.moves.push('firering'); } p.en = 20; })()`);
+  await go('jungle', 16, 12, 'down');
+  await G(`void (${game}).top.run((g, w) => w.battle({ species: 'vinesnap', lv: 9 }))`);
+  for (let i = 0; i < 40 && (await top()) !== 'Menu'; i++) { await key('Space', 30); await sleep(150); }
+  await G(`void (() => { const b = ${battle}; b.foe.hp = b.foe.maxHp; b.foe.maxHp = 999; b.foe.hp = 999; b.foe.disp = 999; b.me.spd = 999; b.enyaHere = false; })()`);
+  await key('Space'); await sleep(300);
+  const mv = await G(`(${game}).top.items.map((i) => i.label)`);
+  for (let i = 0; i < mv.indexOf('FIRE TIGER RING'); i++) await key('KeyS', 30);
+  await key('Space');
+  for (let i = 0; i < 40 && !(await G(`(${battle} || { fx: [] }).fx.some((f) => f.k === 'fring')`)); i++) { await key('Space', 30); await sleep(60); }
+  await waitFor(`(() => { const b = ${battle}; const r = b && b.fx.filter((q) => q.k === 'fring'); return r && r.length >= 3 && r[0].t >= 16; })()`, 300, 5);
+  await grab('firering');
+  await G(`void (() => { const b = ${battle}; if (b) { b.foe.hp = 1; b.foe.disp = 1; } })()`);
+  for (let i = 0; i < 300 && (await top()) !== 'World'; i++) { await key('Space', 30); await sleep(110); }
+  await sleep(800);
+}
+// a dream on the COMET: the ball has just landed on MR NOLAN's roof...
+if (want('dream')) {
+  await G(`void (async () => { const g = ${game}; const { Dream } = await import('/src/game/scenes.js'); g.push(new Dream(g, 'summer', () => {})); })()`);
+  for (let i = 0; i < 600 && !(await G(`(() => { const d = (${game}).scenes.find((s) => s.kind === 'Dream'); return d && d.nolan; })()`)); i++) {
+    const prompt = await G(`(() => { const d = (${game}).scenes.find((s) => s.kind === 'Dream'); return d && d.prompt; })()`);
+    if (prompt || (await top()) === 'Dialog') await key('Space', 30);
+    await sleep(60);
+  }
+  await waitFor(`(() => { const d = (${game}).scenes.find((s) => s.kind === 'Dream'); return d && d.nolan && d.bubble < 62; })()`, 100, 10);
+  await grab('dream');
+  for (let i = 0; i < 200 && (await top()) !== 'World'; i++) { await key('Space', 30); await sleep(110); }
+  await G(`void ((${game}).fadeLevel = 0)`);   // the dream ends in a white fade (a hop would land you somewhere new)
+  await sleep(800);
+}
+
 // the MEMORIES page of the quest notes
 if (want('memories')) {
 await key('Escape'); await sleep(300);

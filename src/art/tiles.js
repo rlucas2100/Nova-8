@@ -50,9 +50,28 @@ export const TILE = {
   'u': { name: 'sprouts', encounter: true },
   'c': { name: 'leafbridge', bridge: true },
   'Y': { name: 'sky2', solid: true, void: true },
+  // the Venom Mire
+  'm': { name: 'mud' },
+  'v': { name: 'reeds', encounter: true },
+  'z': { name: 'ooze', solid: true, ooze: true },
+  'k': { name: 'planks', bridge: true },
+  'K': { name: 'staffbridge', bridge: true },   // Cody's staff, stretched across the ooze
+  'D': { name: 'deadwood', solid: true },
+  // the Jade Lagoon
+  'l': { name: 'lagoon', solid: true, water: true, lagoon: true },
+  'O': { name: 'lagoonstone', bridge: true },
+  'h': { name: 'lagoonbridge', bridge: true },
+  'J': { name: 'jade' },
+  'W': { name: 'palacewall', solid: true },
+  // the Withered Deep: the Whisperwood's own ground, drained of colour (healing it swaps these back)
+  'g': { name: 'jungle', grey: true },
+  'G': { name: 'canopy', solid: true, grey: true },
+  'F': { name: 'fern', encounter: true, grey: true },
+  'M': { name: 'water', solid: true, water: true, grey: true },
+  'Q': { name: 'bridgeH', bridge: true, grey: true },
 };
 
-const LAND_BASE = { soil: P.soil, lawn: P.lawn, plaza: P.st2, path: P.path, glow: P.soil, flowers: P.lawn, blooms: P.soil, scorch: P.lawn, sand: P.sand, nest: '#5a2a34', jungle: '#25603f', fern: '#1b4a30', ruin: '#6e6a90', moss: '#4a1f7a', sprouts: '#3a1660' };
+const LAND_BASE = { soil: P.soil, lawn: P.lawn, plaza: P.st2, path: P.path, glow: P.soil, flowers: P.lawn, blooms: P.soil, scorch: P.lawn, sand: P.sand, nest: '#5a2a34', jungle: '#25603f', fern: '#1b4a30', ruin: '#6e6a90', moss: '#4a1f7a', sprouts: '#3a1660', mud: '#3e4a26', reeds: '#34401f', jade: '#3a9a6a' };
 
 function dot(g, x, y, c) { g.fillStyle = c; g.fillRect(x, y, 1, 1); }
 function box(g, x, y, w, h, c) { g.fillStyle = c; g.fillRect(x, y, w, h); }
@@ -326,7 +345,7 @@ function jungle(g, x, y, f, n, X, Y, base = J.floor) {
   }
 }
 function canopy(g, x, y, f, n, X, Y) {
-  const tree = (c) => c === 'T';
+  const tree = (c) => c === 'T' || c === 'G';
   box(g, x, y, 16, 16, J.dark);
   for (let i = 0; i < 9; i++) {
     const lx = x + Math.floor(hash(X, Y, i + 1000) * 14), ly = y + 1 + Math.floor(hash(X, Y, i + 1010) * 13);
@@ -412,7 +431,188 @@ function leafbridge(g, x, y, f, n, X, Y) {   // a walkway of giant floating leav
   }
 }
 
+/* ---------- the Venom Mire: dark mud, cattail reeds, thick yellow-green ooze, rickety planks, dead trees ---------- */
+const MR = { mud: '#3e4a26', mud2: '#2e3a1c', mud3: '#56602e', ooze: '#9ab82a', ooze2: '#c8e83a', ooze3: '#6a8a1a', glint: '#f0ff8a', wood: '#7a5a34', wood2: '#4a3418', wood3: '#a87e4c', dead: '#2a2a1e', bark: '#5a4e3a', bark2: '#3a3226', moss: '#6a8a4a' };
+const isOoze = (c) => (TILE[c] || {}).ooze;
+function mud(g, x, y, f, n, X, Y, base = MR.mud) {
+  box(g, x, y, 16, 16, base);
+  for (let i = 0; i < 10; i++) dot(g, x + Math.floor(hash(X, Y, i + 1600) * 16), y + Math.floor(hash(X, Y, i + 1610) * 16), hash(X, Y, i + 1620) < 0.5 ? MR.mud2 : MR.mud3);
+  if (hash(X, Y, 1630) < 0.22) {   // a little puddle of ooze, glinting
+    const px = x + 2 + Math.floor(hash(X, Y, 1631) * 10), py = y + 3 + Math.floor(hash(X, Y, 1632) * 10);
+    box(g, px, py, 3, 1, MR.ooze3); box(g, px + 1, py - 1, 2, 1, MR.ooze); if ((f + X) % 4 === 0) dot(g, px + 1, py - 1, MR.glint);
+  }
+  if (hash(X, Y, 1640) < 0.16) {   // a twig
+    const tx = x + 2 + Math.floor(hash(X, Y, 1641) * 10), ty = y + 2 + Math.floor(hash(X, Y, 1642) * 11);
+    box(g, tx, ty, 4, 1, MR.wood2); dot(g, tx + 2, ty - 1, MR.wood2);
+  }
+  if (hash(X, Y, 1650) < 0.1) {    // a pale toadstool
+    const mx = x + 3 + Math.floor(hash(X, Y, 1651) * 10), my = y + 4 + Math.floor(hash(X, Y, 1652) * 9);
+    dot(g, mx, my + 1, '#d8d0b0'); box(g, mx - 1, my, 3, 1, '#c8a8e8'); dot(g, mx, my - 1, '#c8a8e8');
+  }
+  // a darker, damp bank where the mud meets the ooze
+  if (isOoze(n(0, -1))) box(g, x, y, 16, 2, MR.mud2);
+  if (isOoze(n(-1, 0))) box(g, x, y, 2, 16, MR.mud2);
+  if (isOoze(n(1, 0))) box(g, x + 14, y, 2, 16, MR.mud2);
+}
+function reeds(g, x, y, f, n, X, Y) {   // cattail reeds: wild creatures hide in them
+  mud(g, x, y, f, n, X, Y, '#34401f');
+  for (let i = 0; i < 5; i++) {
+    const bx = x + 2 + ((i * 6 + Math.floor(hash(X, Y, i + 1700) * 3)) % 12), by = y + 14 - ((i * 3) % 5);
+    const sway = (f + i) % 4 === 1 ? 1 : (f + i) % 4 === 3 ? -1 : 0, h = 8 + ((i * 5 + X) % 4);
+    for (let k = 0; k < h; k++) dot(g, bx + Math.round((sway * k) / h), by - k, k < 2 ? '#5a6a2a' : '#8a9a3a');
+    const tx = bx + sway, ty = by - h;
+    box(g, tx, ty - 2, 1, 3, '#6a3a1a'); dot(g, tx, ty - 3, '#a8b85a');                         // the brown cattail head
+    if (i % 2) { dot(g, bx - 1, by - 3, '#7a8a3a'); dot(g, bx - 2, by - 4, '#7a8a3a'); }          // a leaf
+  }
+}
+function ooze(g, x, y, f, n, X, Y) {
+  box(g, x, y, 16, 16, MR.ooze);
+  // slow, thick swirls drifting along, and darker sludge
+  for (const [r, k] of [[3, 0], [8, 1], [13, 2]]) {
+    const wx = (X * 5 + r * 7 + f + k * 4) % 16;
+    for (let i = 0; i < 6; i++) dot(g, x + ((wx + i) % 16), y + r + (i === 0 || i === 5 ? 1 : 0), MR.ooze2);
+    dot(g, x + ((wx + 9) % 16), y + r + 1, MR.ooze3); dot(g, x + ((wx + 10) % 16), y + r + 1, MR.ooze3);
+  }
+  // a bubble that swells and pops
+  const ph = (Math.floor(hash(X, Y, 1800) * 4) + f) % 4, bx = x + 3 + Math.floor(hash(X, Y, 1801) * 9), by = y + 3 + Math.floor(hash(X, Y, 1802) * 9);
+  if (ph === 1) { dot(g, bx, by, MR.glint); }
+  else if (ph === 2) { box(g, bx - 1, by - 1, 3, 3, MR.ooze2); dot(g, bx - 1, by - 1, MR.glint); dot(g, bx, by, MR.ooze3); }
+  else if (ph === 3) { dot(g, bx - 2, by, MR.glint); dot(g, bx + 2, by, MR.glint); dot(g, bx, by - 2, MR.glint); }
+  // where it meets the bank: a dark rim, and drips
+  if (!isOoze(n(0, -1)) && !(TILE[n(0, -1)] || {}).bridge) { box(g, x, y, 16, 2, MR.mud2); for (let i = 0; i < 16; i += 3) dot(g, x + i + (X % 3), y + 2, MR.ooze3); }
+  if (!isOoze(n(-1, 0)) && !(TILE[n(-1, 0)] || {}).bridge) box(g, x, y, 1, 16, MR.mud2);
+  if (!isOoze(n(1, 0)) && !(TILE[n(1, 0)] || {}).bridge) box(g, x + 15, y, 1, 16, MR.mud2);
+}
+function planks(g, x, y, f, n, X, Y) {   // a narrow, rickety plank bridge over the ooze
+  ooze(g, x, y, f, n, X, Y);
+  const along = (c) => c === 'k' || c === 'K' || !(TILE[c] || {}).solid;
+  const horiz = along(n(-1, 0)) || along(n(1, 0));
+  for (let i = 0; i < 4; i++) {
+    const k = i * 4 + (hash(X, Y, i + 1900) < 0.5 ? 0 : 1), sag = hash(X, Y, i + 1910) < 0.3 ? 1 : 0;
+    if (horiz) { box(g, x + k, y + 4 + sag, 3, 8, MR.wood); box(g, x + k, y + 4 + sag, 3, 1, MR.wood3); box(g, x + k + 2, y + 5 + sag, 1, 7, MR.wood2); }
+    else { box(g, x + 4 + sag, y + k, 8, 3, MR.wood); box(g, x + 4 + sag, y + k, 8, 1, MR.wood3); box(g, x + 4 + sag, y + k + 2, 8, 1, MR.wood2); }
+  }
+  if (horiz) { box(g, x, y + 3, 16, 1, '#c8b080'); box(g, x, y + 12, 16, 1, '#8a7650'); }   // rope rails
+  else { box(g, x + 3, y, 1, 16, '#c8b080'); box(g, x + 12, y, 1, 16, '#8a7650'); }
+}
+function staffBridge(g, x, y, f, n, X, Y) {   // Cody's staff, stretched right across the gap: it doesn't even bend
+  ooze(g, x, y, f, n, X, Y);
+  box(g, x, y + 5, 16, 6, '#1a0f2e');
+  box(g, x, y + 6, 16, 4, '#9a6232'); box(g, x, y + 6, 16, 1, '#c88a4a'); box(g, x, y + 9, 16, 1, '#5a3a1c');
+  if (X % 2 === 0) { box(g, x + 6, y + 5, 3, 6, '#ffd23a'); box(g, x + 6, y + 5, 3, 1, '#fff6a0'); box(g, x + 8, y + 6, 1, 4, '#c88a1a'); }
+  if (f % 2 === 0) dot(g, x + ((X * 5 + f * 3) % 14) + 1, y + 6, '#fff6a0');
+}
+function deadwood(g, x, y, f, n, X, Y) {   // a wall of dead swamp trees, hung with moss
+  const tree = (c) => c === 'D';
+  box(g, x, y, 16, 16, MR.dead);
+  for (let i = 0; i < 6; i++) {   // gnarled branches
+    const bx = x + Math.floor(hash(X, Y, i + 2000) * 14), by = y + 1 + Math.floor(hash(X, Y, i + 2010) * 13);
+    box(g, bx, by, 3, 1, MR.bark); dot(g, bx + 3, by - 1, MR.bark); dot(g, bx - 1, by + 1, MR.bark2);
+  }
+  for (let i = 0; i < 3; i++) {   // hanging moss
+    const mx = x + 1 + Math.floor(hash(X, Y, i + 2020) * 14), ml = 2 + Math.floor(hash(X, Y, i + 2030) * 5), my = y + Math.floor(hash(X, Y, i + 2040) * 6);
+    box(g, mx, my, 1, ml, MR.moss); dot(g, mx, my + ml, '#8aaa5a');
+  }
+  if (hash(X, Y, 2050) < 0.1) { const fx = x + 4 + Math.floor(hash(X, Y, 2051) * 8), fy = y + 4 + Math.floor(hash(X, Y, 2052) * 6); if ((f + X) % 4 < 2) { dot(g, fx, fy, '#f0ff5a'); dot(g, fx + 2, fy, '#f0ff5a'); } }   // eyes in the dark
+  if (!tree(n(0, -1))) { box(g, x, y, 16, 1, MR.bark); for (let i = 0; i < 16; i += 3) dot(g, x + i + (X % 3), y + 1, MR.moss); }
+  if (!tree(n(0, 1))) {   // the edge: trunks, roots, and the moss hanging down
+    box(g, x, y + 10, 16, 6, '#1e1e16');
+    for (let i = 0; i < 2; i++) { const tx = x + 2 + Math.floor(hash(X, Y, i + 2060) * 10); box(g, tx, y + 8, 3, 8, MR.bark); dot(g, tx, y + 8, MR.bark2); box(g, tx + 2, y + 9, 1, 7, MR.bark2); dot(g, tx - 1, y + 15, MR.bark); dot(g, tx + 3, y + 15, MR.bark); }
+    for (let i = 0; i < 3; i++) { const vx = x + 1 + Math.floor(hash(X, Y, i + 2070) * 14), vl = 3 + Math.floor(hash(X, Y, i + 2080) * 5); box(g, vx, y + 7, 1, vl, MR.moss); }
+    box(g, x, y + 15, 16, 1, P.ink);
+  }
+  if (!tree(n(-1, 0))) box(g, x, y, 1, 16, MR.bark2);
+  if (!tree(n(1, 0))) box(g, x + 15, y, 1, 16, '#14140e');
+}
+
+/* ---------- the Jade Lagoon: clear turquoise water, a red bridge, jade paving and the palace walls ---------- */
+const LG = { w: '#1aa8b8', w2: '#0e8a9c', w3: '#4ad8e0', w4: '#b8f8ff', foam: '#e8ffff', jade: '#3a9a6a', jade2: '#48b07a', jade3: '#2a7a52', gold: '#ffd23a', red: '#c8402a', red2: '#8a2a1e', roof: '#2a8a5a', roof2: '#1a5a3a' };
+function lagoon(g, x, y, f, n, X, Y) {
+  const wet = (c) => (TILE[c] || {}).lagoon || c === 'O' || c === 'h';
+  box(g, x, y, 16, 16, LG.w);
+  for (let i = 0; i < 7; i++) dot(g, x + Math.floor(hash(X, Y, i + 2100) * 16), y + Math.floor(hash(X, Y, i + 2105) * 16), LG.w2);   // deeper flecks
+  for (const [r, k] of [[3, 0], [9, 1], [14, 2]]) {   // gentle ripples
+    const wx = (X * 3 + r * 5 + f * 2 + k * 6) % 16;
+    for (let i = 0; i < 4; i++) dot(g, x + ((wx + i) % 16), y + r, LG.w3);
+  }
+  if ((Math.floor(hash(X, Y, 2110) * 4) + f) % 4 === 0) { const sx = x + 3 + (X * 5) % 10, sy = y + 3 + (Y * 7) % 10; dot(g, sx, sy, LG.w4); dot(g, sx + 1, sy, LG.foam); }   // sparkles
+  if (hash(X, Y, 2120) < 0.08) { const fx = x + 4 + ((f * 2 + X) % 8), fy = y + 6 + Math.floor(hash(X, Y, 2121) * 6); dot(g, fx, fy, '#ff9a3a'); dot(g, fx + 1, fy, '#ffd25a'); dot(g, fx - 1, fy + (f % 2), '#ff9a3a'); }   // a little goldfish
+  // foam where the water laps the shore
+  if (!wet(n(0, -1))) { box(g, x, y, 16, 2, LG.foam); for (let i = (f % 2); i < 16; i += 4) dot(g, x + i, y + 2, LG.w4); }
+  if (!wet(n(-1, 0))) box(g, x, y, 1, 16, LG.foam);
+  if (!wet(n(1, 0))) box(g, x + 15, y, 1, 16, LG.foam);
+  if (!wet(n(0, 1))) box(g, x, y + 15, 16, 1, LG.w4);
+}
+function lagoonStone(g, x, y, f, n, X, Y) {
+  lagoon(g, x, y, f, n, X, Y);
+  box(g, x + 3, y + 4, 10, 9, '#4e7a70'); box(g, x + 2, y + 5, 12, 7, '#4e7a70');
+  box(g, x + 3, y + 4, 10, 7, '#8ab8a8'); box(g, x + 2, y + 5, 12, 5, '#8ab8a8');
+  box(g, x + 4, y + 5, 5, 2, '#b8e0d0'); dot(g, x + 4, y + 5, '#e8fff8');
+  box(g, x + 3, y + 12, 10, 1, (f % 2) ? LG.foam : LG.w4);
+}
+function lagoonBridge(g, x, y, f, n, X, Y) {   // a red-lacquered bridge with golden rails
+  lagoon(g, x, y, f, n, X, Y);
+  const along = (c) => !(TILE[c] || {}).solid;
+  const horiz = along(n(-1, 0)) || along(n(1, 0)) || n(-1, 0) === 'h' || n(1, 0) === 'h';
+  if (horiz) {
+    box(g, x, y + 2, 16, 12, LG.red); for (let i = 0; i < 16; i += 4) box(g, x + i, y + 3, 1, 10, LG.red2);
+    box(g, x, y + 1, 16, 2, LG.gold); box(g, x, y + 13, 16, 2, LG.gold); box(g, x, y + 15, 16, 1, P.ink);
+  } else {
+    box(g, x + 2, y, 12, 16, LG.red); for (let i = 0; i < 16; i += 4) box(g, x + 3, y + i, 10, 1, LG.red2);
+    box(g, x + 1, y, 2, 16, LG.gold); box(g, x + 13, y, 2, 16, LG.gold);
+  }
+}
+function jade(g, x, y, f, n, X, Y) {   // polished jade paving, with gold inlay
+  for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
+    const sx = x + i * 8, sy = y + j * 8, v = hash(X * 2 + i, Y * 2 + j, 2200);
+    box(g, sx, sy, 8, 8, v < 0.4 ? LG.jade : LG.jade2);
+    box(g, sx, sy, 8, 1, '#7ad8a8'); box(g, sx, sy + 7, 8, 1, LG.jade3); box(g, sx + 7, sy, 1, 8, LG.jade3);
+    if (v > 0.8) { box(g, sx + 3, sy + 3, 2, 2, LG.gold); dot(g, sx + 3, sy + 3, '#fff2a0'); }
+  }
+  if ((X + Y) % 4 === 0 && (f % 2)) dot(g, x + 2, y + 2, '#e8fff4');   // a glint on the polish
+}
+function palaceWall(g, x, y, f, n, X, Y) {   // red lacquered walls, gold trim, a roof of green tiles on top
+  const wall = (c) => c === 'W';
+  box(g, x, y, 16, 16, LG.red);
+  for (let i = 0; i < 16; i += 8) box(g, x + i + 3, y + 5, 2, 9, LG.red2);                     // panels
+  box(g, x, y + 13, 16, 2, LG.gold); box(g, x, y + 15, 16, 1, P.ink);
+  if (!wall(n(0, -1))) {   // the tiled roof along the top
+    box(g, x, y, 16, 5, LG.roof); for (let i = 0; i < 16; i += 2) box(g, x + i, y + 1, 1, 4, LG.roof2);
+    box(g, x, y, 16, 1, '#5ad89a'); box(g, x, y + 5, 16, 1, LG.gold);
+  }
+  if (!wall(n(-1, 0))) box(g, x, y, 1, 16, LG.red2);
+  if (!wall(n(1, 0))) box(g, x + 15, y, 1, 16, LG.red2);
+}
+
+/* the Withered Deep: after a frame is painted, its grey tiles are drained of colour (a cold blue-grey) */
+function drain(c, rows, w, h) {
+  try {
+    const g = c.getContext('2d'), img = g.getImageData(0, 0, w * 16, h * 16), d = img.data;
+    for (let Y = 0; Y < h; Y++) for (let X = 0; X < w; X++) {
+      if (!(TILE[rows[Y][X]] || {}).grey) continue;
+      for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) {
+        const k = ((Y * 16 + j) * w * 16 + X * 16 + i) * 4, l = d[k] * 0.3 + d[k + 1] * 0.55 + d[k + 2] * 0.15;
+        d[k] = l * 0.86 + 8; d[k + 1] = l * 0.86 + 8; d[k + 2] = l * 0.92 + 16;
+      }
+    }
+    g.putImageData(img, 0, 0);
+  } catch (e) { /* no pixels to read (tests): leave it in colour */ }
+}
+/* a prop drained of colour in the same way */
+function grey(src) {
+  const c = makeCanvas(src.width, src.height), g = c.getContext('2d');
+  g.drawImage(src, 0, 0);
+  try {
+    const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
+    for (let k = 0; k < d.length; k += 4) { const l = d[k] * 0.3 + d[k + 1] * 0.55 + d[k + 2] * 0.15; d[k] = l * 0.86 + 8; d[k + 1] = l * 0.86 + 8; d[k + 2] = l * 0.92 + 16; }
+    g.putImageData(img, 0, 0);
+  } catch (e) {}
+  return c;
+}
+
 const PAINT = {
+  mud: (g, x, y, f, n, X, Y) => mud(g, x, y, f, n, X, Y), reeds, ooze, planks, staffbridge: staffBridge, deadwood,
+  lagoon, lagoonstone: lagoonStone, lagoonbridge: lagoonBridge, jade, palacewall: palaceWall,
   soil: (g, x, y, f, n, X, Y) => soil(g, x, y, f, n, X, Y), lawn, plaza, path, glow, hedge, cliff, sand, scorch, nest,
   water: (g, x, y, f, n, X, Y) => water(g, x, y, f, n, X, Y, false),
   algae: (g, x, y, f, n, X, Y) => water(g, x, y, f, n, X, Y, true),
@@ -436,6 +636,7 @@ export function paintMap(rows) {
       const fn = PAINT[t.name] || PAINT.soil;
       fn(g, X * 16, Y * 16, f, (dx, dy) => at(X + dx, Y + dy), X, Y, h);
     }
+    if (rows.some((r) => [...r].some((ch) => (TILE[ch] || {}).grey))) drain(c, rows, w, h);
     frames.push(c);
   }
   return frames;
@@ -907,19 +1108,193 @@ function speakerArt() {
   });
 }
 
+/* ---------- Venom Mire props ---------- */
+function deadTreeArt() {   // a gnarled dead swamp tree, hung with moss, with something watching from its hollow
+  return canvasOf(32, 48, (g) => {
+    const p = painter(32, 48);
+    curve(p, 16, 47, 13, 30, 17, 14, 3.4, 2.2, 'T');
+    curve(p, 16, 22, 8, 16, 3, 6, 1.6, 0.8, 'T'); curve(p, 17, 18, 24, 12, 29, 4, 1.5, 0.8, 'T'); curve(p, 16, 14, 15, 7, 12, 1, 1.2, 0.7, 'T');
+    curve(p, 7, 14, 4, 13, 1, 15, 0.9, 0.6, 'T'); curve(p, 25, 10, 28, 11, 31, 9, 0.8, 0.6, 'T');
+    p.poly([[13, 47], [7, 48], [14, 42]], 'T'); p.poly([[19, 47], [26, 48], [18, 42]], 'T');
+    p.recolour('T', 't', (x) => x >= 17);
+    p.ellipse(15.5, 30, 2.2, 3, 'H'); p.set(15, 29, 'E'); p.set(16, 29, 'E');                 // the hollow, and two eyes
+    for (const [mx, my, l] of [[6, 13, 6], [10, 18, 5], [23, 12, 7], [27, 7, 5], [13, 6, 4], [19, 16, 4]]) p.line(mx, my, mx, my + l, 'M');
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, T: '#6a5e48', t: '#4a4034', H: '#14140e', E: '#f0ff5a', M: '#7a9a4a' }), 0, 0);
+  });
+}
+function stumpArt() {
+  return canvasOf(16, 16, (g) => {
+    const p = painter(16, 16);
+    p.rect(3, 7, 10, 8, 'T'); p.ellipse(8, 7, 5, 2, 't'); p.ellipse(8, 7, 3, 1, 'R');
+    p.poly([[3, 14], [1, 15], [4, 12]], 'T'); p.poly([[12, 14], [15, 15], [11, 12]], 'T');
+    p.recolour('T', 'D', (x) => x >= 10);
+    p.ellipse(12, 10, 2, 1.4, 'C'); p.set(12, 11, 'S'); p.ellipse(4, 12, 1.6, 1.1, 'C');      // toadstools
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, T: '#6a5e48', D: '#4a4034', t: '#a89470', R: '#7a6a50', C: '#c8a8e8', S: '#e8e0d0' }), 0, 0);
+  });
+}
+function logArt() {
+  return canvasOf(32, 16, (g) => {
+    const p = painter(32, 16);
+    p.rect(3, 6, 25, 8, 'T'); p.ellipse(28, 10, 2.5, 4, 'R'); p.ellipse(28, 10, 1.2, 2.2, 'r');
+    p.shade('T', 'D', 0, 1, 2);
+    for (const x of [6, 11, 17, 22]) p.line(x, 7, x + 2, 7, 'D');
+    p.ellipse(10, 6, 5, 1.6, 'M'); p.ellipse(20, 6, 4, 1.3, 'M'); p.set(8, 4, 'F'); p.set(21, 4, 'F');
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, T: '#6a5e48', D: '#4a4034', R: '#a89470', r: '#7a6a50', M: '#5a8a3a', F: '#f0ff5a' }), 0, 0);
+  });
+}
+
+/* ---------- Jade Lagoon props ---------- */
+function palmArt() {
+  return canvasOf(32, 48, (g) => {
+    const p = painter(32, 48);
+    curve(p, 15, 47, 19, 30, 14, 13, 2.3, 1.6, 'T');
+    for (const [x1, y1, cx, cy] of [[1, 15, 7, 7], [4, 22, 6, 13], [30, 16, 23, 7], [28, 23, 25, 13], [15, 1, 12, 5], [22, 3, 19, 4]]) curve(p, 14, 12, cx, cy, x1, y1, 2, 0.7, 'L');
+    p.shade('L', 'D', 0, 1, 1);
+    for (let y = 16; y < 46; y += 3) p.line(14 + Math.round(Math.sin(y / 9) * 2), y, 17 + Math.round(Math.sin(y / 9) * 2), y, 't');
+    p.ellipse(12.5, 14, 1.6, 1.6, 'C'); p.ellipse(16, 14.5, 1.6, 1.6, 'C'); p.set(12, 13, 'c');
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, T: '#b8864a', t: '#8a5e30', L: '#3fc070', D: '#1f8a4a', C: '#7a4a24', c: '#c88a4a' }), 0, 0);
+  });
+}
+function coralArt() {
+  return canvasOf(16, 16, (g) => {
+    const p = painter(16, 16);
+    for (const [x1, y1, cx] of [[3, 3, 4], [8, 1, 8], [13, 4, 12], [5, 7, 4], [11, 7, 12]]) curve(p, 8, 15, cx, 9, x1, y1, 1.3, 0.8, 'C');
+    p.shade('C', 'c', 1, 1, 1);
+    for (const [x, y] of [[3, 3], [8, 1], [13, 4]]) p.set(x, y, 'W');
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, C: '#ff7aa8', c: '#c8407a', W: '#ffe0ec' }), 0, 0);
+  });
+}
+function jadePillarArt() {   // a red pillar, a golden dragon curling round it, a jade base
+  return canvasOf(16, 40, (g) => {
+    const p = painter(16, 40);
+    p.rect(4, 4, 8, 32, 'R'); p.rect(2, 34, 12, 5, 'J'); p.rect(2, 1, 12, 4, 'J');
+    p.shade('R', 'r', 1, 0, 2); p.shade('J', 'j', 0, 1, 1);
+    for (let y = 6; y < 33; y++) { const x = 8 + Math.round(Math.sin(y / 3.2) * 4); p.set(x, y, 'Y'); p.set(x + 1, y, 'Y'); }
+    p.ellipse(9, 7, 2, 1.6, 'Y'); p.set(10, 7, 'E');
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, R: '#c8402a', r: '#8a2a1e', J: '#48b07a', j: '#2a7a52', Y: '#ffd23a', E: '#ff3a3a' }), 0, 0);
+  });
+}
+function throneArt() {   // the Dragon King's throne: jade and gold, with a dragon's head at each end
+  return canvasOf(48, 32, (g) => {
+    const p = painter(48, 32);
+    p.rect(6, 6, 36, 22, 'J'); p.rect(2, 22, 44, 8, 'Y');
+    p.poly([[6, 6], [24, 0], [42, 6]], 'J');
+    p.ellipse(4, 12, 4, 4, 'Y'); p.ellipse(44, 12, 4, 4, 'Y');                                 // dragon heads
+    p.shade('J', 'j', 0, 1, 2); p.shade('Y', 'y', 0, 1, 1);
+    p.rect(14, 10, 20, 12, 'R'); p.rect(15, 11, 18, 2, 'r');                                  // the red cushion
+    p.ellipse(24, 4, 2.4, 2.4, 'W');                                                          // a pearl set in the top
+    p.set(3, 11, 'E'); p.set(45, 11, 'E');
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, J: '#48b07a', j: '#2a7a52', Y: '#ffd23a', y: '#c88a1a', R: '#c8402a', r: '#e86a4a', W: '#e8fbff', E: '#ff3a3a' }), 0, 0);
+  });
+}
+function gongArt() {   // a great bronze gong, hung in a red frame
+  return canvasOf(32, 40, (g) => {
+    const p = painter(32, 40);
+    p.rect(2, 4, 3, 35, 'R'); p.rect(27, 4, 3, 35, 'R'); p.rect(0, 2, 32, 4, 'R');
+    p.poly([[0, 2], [-1, 0], [3, 2]], 'R'); p.poly([[32, 2], [33, 0], [29, 2]], 'R');
+    p.shade('R', 'r', 0, 1, 1);
+    p.line(16, 6, 16, 9, 'S');
+    p.ellipse(16, 20, 10, 10, 'B'); p.ellipse(16, 20, 7, 7, 'b'); p.ellipse(16, 20, 3, 3, 'B'); p.ellipse(13, 16, 2, 1.4, 'W');
+    p.rect(1, 37, 6, 3, 'J'); p.rect(25, 37, 6, 3, 'J');
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, R: '#c8402a', r: '#8a2a1e', S: '#3a3a50', B: '#e8a83a', b: '#c8862a', W: '#fff0b0', J: '#48b07a' }), 0, 0);
+  });
+}
+function treasureArt(withCore) {   // a heap of gold and jewels; on top, glowing, the STAR CORE (the King calls it his pearl)
+  return canvasOf(32, 28, (g) => {
+    const p = painter(32, 28);
+    p.ellipse(16, 22, 15, 6, 'Y'); p.ellipse(16, 18, 10, 5, 'Y');
+    p.shade('Y', 'y', 0, 1, 2);
+    for (const [x, y, c] of [[6, 21, 'R'], [11, 17, 'B'], [20, 16, 'G'], [25, 20, 'R'], [15, 24, 'G'], [9, 24, 'B'], [22, 24, 'W']]) { p.set(x, y, c); p.set(x + 1, y, c); p.set(x, y - 1, c); }
+    for (const [x, y] of [[4, 24], [13, 20], [18, 21], [27, 23], [10, 15]]) p.set(x, y, 'w');
+    if (withCore) { p.ellipse(16, 9, 5.5, 5.5, 'C'); p.ellipse(16, 9, 3.4, 3.4, 'c'); p.ellipse(14.5, 7.5, 1.4, 1.4, 'W'); }
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, Y: '#ffd23a', y: '#c88a1a', w: '#fff6c0', R: '#ff3a4e', B: '#4f8cff', G: '#2fe070', W: '#ffffff', C: '#8fd8ff', c: '#e8fbff' }), 0, 0);
+  });
+}
+function stoneLanternArt(f) {
+  return canvasOf(16, 24, (g) => {
+    const p = painter(16, 24);
+    p.rect(6, 14, 4, 8, 'S'); p.rect(3, 21, 10, 3, 'S'); p.rect(4, 8, 8, 6, 'S'); p.poly([[2, 8], [8, 3], [14, 8]], 'S');
+    p.shade('S', 's', 1, 0, 1);
+    p.rect(6, 9, 4, 4, f ? 'L' : 'l');
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, S: '#8ab8a8', s: '#4e7a70', L: '#ffd25a', l: '#ff9a3a' }), 0, 0);
+  });
+}
+function palaceGateArt() {   // a gateway in the palace wall: two red posts and a roof of green tiles (you walk under it)
+  return canvasOf(48, 40, (g) => {
+    const p = painter(48, 40);
+    p.rect(3, 12, 5, 28, 'R'); p.rect(40, 12, 5, 28, 'R');
+    p.rect(1, 6, 46, 6, 'G'); p.poly([[0, 6], [-1, 2], [6, 6]], 'G'); p.poly([[48, 6], [49, 2], [42, 6]], 'G');
+    p.rect(6, 12, 36, 3, 'R'); p.rect(18, 14, 12, 6, 'Y');
+    p.shade('R', 'r', 1, 0, 1);
+    for (let x = 2; x < 46; x += 2) p.set(x, 8, 'g');
+    p.line(20, 16, 27, 16, 'r'); p.line(20, 18, 27, 18, 'r');
+    p.outline('K');
+    g.drawImage(spr(p.rows(), { K: P.ink, R: '#c8402a', r: '#8a2a1e', G: '#2a8a5a', g: '#5ad89a', Y: '#ffd23a' }), 0, 0);
+  });
+}
+
+/* ---------- Withered Deep props ---------- */
+function lairTreeArt(healed) {   // a vast dead tree at the heart of the Deep, split open, the Black Dragon's lair (it sprouts again)
+  return canvasOf(64, 64, (g) => {
+    const p = painter(64, 64);
+    if (healed) for (const [x, y, r] of [[8, 6, 6], [56, 5, 6], [30, 4, 5], [18, 12, 4], [46, 10, 4]]) { p.ellipse(x, y, r, r * 0.7, 'L'); p.ellipse(x - 1, y - 1, r * 0.5, r * 0.35, 'l'); }
+    p.poly([[22, 63], [14, 64], [8, 60], [20, 56], [22, 30], [18, 18], [24, 10], [32, 6], [42, 12], [44, 24], [40, 56], [54, 60], [50, 64], [42, 63]], 'T');
+    curve(p, 24, 16, 10, 10, 3, 2, 2.2, 0.8, 'T'); curve(p, 40, 14, 52, 8, 61, 3, 2.2, 0.8, 'T'); curve(p, 32, 8, 31, 3, 28, 0, 1.6, 0.7, 'T');
+    curve(p, 10, 10, 6, 14, 2, 13, 1, 0.6, 'T'); curve(p, 52, 8, 56, 13, 62, 12, 1, 0.6, 'T');
+    p.recolour('T', 't', (x) => x >= 34);
+    p.poly([[27, 60], [26, 40], [32, 28], [37, 40], [36, 60]], 'H');                          // the split
+    for (const [x, y] of [[29, 36], [33, 44], [30, 52]]) p.set(x, y, 'V');
+    for (const [x0, y0, x1, y1] of [[22, 34, 25, 44], [40, 30, 38, 42], [24, 50, 22, 58]]) p.line(x0, y0, x1, y1, 't');
+    if (healed) for (const [x, y] of [[7, 5], [57, 4], [31, 3], [19, 11]]) p.set(x, y, 'F');
+    p.outline('K');
+    g.drawImage(spr(p.rows(), healed ? { K: P.ink, T: '#7a5a40', t: '#5a4030', H: '#1a1008', V: '#5fe07a', L: '#2f8a4a', l: '#5ac070', F: '#ff9ad8' } : { K: '#05020a', T: '#4a4652', t: '#33303a', H: '#0a0610', V: '#b06aff' }), 0, 0);
+  });
+}
+
 /* every prop: drawn size, footprint (solid tiles from its bottom-left), and frames */
 export function buildProps() {
   const two = (fn) => [fn(0), fn(1)];
   const shroom = (k) => { const s = giantShroom(k); return { img: [s.full], glow: s.glow, w: 2, h: 1 }; };
   const orb = (k) => { const s = orbPlant(k); return { img: [s.full], glow: s.glow, w: 1, h: 1 }; };
   const lantern = lanternTree();
+  const bigtree = bigTreeArt();
   return {
+    // the Venom Mire
+    deadtree: { img: [deadTreeArt()], w: 2, h: 1 },
+    stump: { img: [stumpArt()], w: 1, h: 1 },
+    log: { img: [logArt()], w: 2, h: 1 },
+    // the Jade Lagoon
+    palm: { img: [palmArt()], w: 1, h: 1 },
+    coral: { img: [coralArt()], w: 1, h: 1 },
+    jadepillar: { img: [jadePillarArt()], w: 1, h: 1 },
+    throne: { img: [throneArt()], w: 3, h: 1 },
+    gong: { img: [gongArt()], w: 2, h: 1 },
+    treasure: { img: [treasureArt(true)], w: 2, h: 1 },
+    treasure2: { img: [treasureArt(false)], w: 2, h: 1 },
+    stonelantern: { img: two(stoneLanternArt), w: 1, h: 1, anim: 20 },
+    palacegate: { img: [palaceGateArt()], w: 0, h: 0, deco: true, still: true },
+    // the Withered Deep (grey until the Black Dragon is beaten)
+    greytree: { img: [grey(bigtree)], w: 2, h: 1 },
+    greyflower: { img: [grey(glowFlowerArt(0))], w: 1, h: 1 },
+    lairtree: { img: [lairTreeArt(false)], w: 4, h: 1 },
+    lairtree2: { img: [lairTreeArt(true)], w: 4, h: 1 },
+    deadvines: { img: [grey(thornsArt())], w: 1, h: 1 },
     orbplant: orb(0), orbplant2: orb(1), orbplant3: orb(2),
     spiralfern: { img: [spiralFernArt()], w: 1, h: 1 },
     tendril: { img: two(tendrilArt), w: 1, h: 1, anim: 30 },
     lanterntree: { img: [lantern.full], glow: lantern.glow, w: 2, h: 1 },
     bulbs: { img: [bulbsArt()], w: 1, h: 1 },
-    bigtree: { img: [bigTreeArt()], w: 2, h: 1 },
+    bigtree: { img: [bigtree], w: 2, h: 1 },
     glowflower: { img: two(glowFlowerArt), w: 1, h: 1, anim: 24 },
     pillar: { img: [pillarArt()], w: 1, h: 1 },
     veilgate: { img: [veilGateArt()], w: 3, h: 1, gate: true },

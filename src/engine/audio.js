@@ -150,6 +150,9 @@ const VOICES = {   // the little blips each speaker's words make
   jelly: { wave: 'sine', f: 760, spread: 0.35, vol: 0.13, len: 0.05 },
   lumen: { wave: 'triangle', f: 540, spread: 0.1, vol: 0.12, len: 0.045 },
   dj: { wave: 'p0.5', f: 520, spread: 0.4, vol: 0.05, len: 0.03, step: true },
+  cody: { wave: 'triangle', f: 700, spread: 0.25, vol: 0.11, len: 0.04 },
+  dragon: { wave: 'p0.5', f: 180, spread: 0.12, vol: 0.07, len: 0.06 },
+  crab: { wave: 'p0.125', f: 1100, spread: 0.2, vol: 0.05, len: 0.025, step: true },
 };
 export const sfx = {
   blip() { if (!ac) return; tone('p0.25', NOTE('A5'), now(), 0.05, 0.18); },
@@ -234,6 +237,16 @@ export const sfx = {
         break;
       case 'bopjelly': for (let i = 0; i < 3; i++) tone('sine', 400 + i * 200, t + i * 0.08, 0.1, 0.25, { to: 700 + i * 200, slide: 0.08 }); break;
       case 'shroomboom': sfx.drum(); tone('triangle', 90, t + 0.25, 0.3, 0.45, { to: 40 }); break;
+      case 'hissling': case 'spitviper': sfx.hiss(species === 'spitviper' ? 0.7 : 0.5); break;
+      case 'oozefang': sfx.hiss(1.1); tone('triangle', 70, t, 0.9, 0.45, { to: 40 }); noise(t + 0.1, 0.6, 0.2, { freq: 400, type: 'lowpass' }); break;
+      case 'witherwisp': tone('sine', 300, t, 0.9, 0.18, { to: 180, vib: true, vibRate: 5, vibDepth: 0.06, vibDelay: 0 }); noise(t, 0.9, 0.08, { freq: 900, q: 0.6 }); break;
+      case 'dragonKing': case 'blackDragon': case 'whiteDragon': {   // a long, rolling dragon roar
+        const low = species === 'blackDragon' ? 0.7 : species === 'whiteDragon' ? 1.3 : 1;
+        noise(t, 1.1, 0.5, { freq: 600 * low, to: 200 * low, q: 2, metal: true });
+        tone('p0.5', 160 * low, t, 1, 0.26, { to: 80 * low, vib: true, vibRate: 9, vibDepth: 0.05 });
+        tone('triangle', 70 * low, t, 1.1, 0.4, { to: 40 * low });
+        break;
+      }
       default: sfx.wiggle();
     }
   },
@@ -327,6 +340,37 @@ export const sfx = {
   beam() { if (!ac) return; tone('p0.25', 400, now(), 0.5, 0.18, { to: 1600 }); },
   boot() { if (!ac) return; const t = now(); tone('p0.125', NOTE('B5'), t, 0.12, 0.2); tone('p0.125', NOTE('E6'), t + 0.1, 0.5, 0.2, { sustain: 0.5 }); tone('triangle', NOTE('E4'), t + 0.1, 0.5, 0.25); },
   pick() { if (!ac) return; const t = now(); tone('p0.25', 400, t, 0.12, 0.16, { to: 1200 }); seq([null, null, 'E6', 'B6'], 'p0.125', 0.05, 0.16); },
+  /* ---------- Chapter 2 ---------- */
+  chirp() { if (!ac) return; const t = now(); for (let i = 0; i < 3; i++) tone('sine', 2600 + i * 300, t + i * 0.09, 0.06, 0.06, { to: 3400 + i * 200, slide: 0.05 }); },
+  /* NOVA's FIRE TIGER RING: a whoomph, then crackling */
+  fireRing() {
+    if (!ac) return;
+    const t = now();
+    noise(t, 0.5, 0.5, { freq: 200, to: 1800, q: 0.8 }); tone('triangle', 90, t, 0.4, 0.4, { to: 45 });
+    for (let i = 0; i < 6; i++) noise(t + 0.25 + i * 0.07, 0.05, 0.25, { freq: 3000 + Math.random() * 2000, q: 3, metal: true });
+  },
+  poison() { if (!ac) return; const t = now(); for (let i = 0; i < 3; i++) tone('sine', 500 - i * 110, t + i * 0.08, 0.09, 0.2, { to: 300 - i * 60 }); },
+  hiss(len = 0.5) { if (!ac) return; const t = now(); noise(t, len, 0.3, { freq: 6000, type: 'highpass' }); noise(t + 0.05, len * 0.8, 0.15, { freq: 3500, q: 2 }); },
+  spit() { if (!ac) return; const t = now(); noise(t, 0.12, 0.4, { freq: 2000, to: 600 }); tone('sine', 900, t, 0.1, 0.15, { to: 300 }); },
+  /* Cody's staff: growing (a rising boing), shrinking (a falling one), and landing with all its seven thousand kilos */
+  grow() { if (!ac) return; const t = now(); tone('p0.25', 180, t, 0.45, 0.18, { to: 900, vib: true, vibRate: 18, vibDepth: 0.06, vibDelay: 0 }); tone('triangle', 90, t, 0.45, 0.25, { to: 300 }); },
+  shrink() { if (!ac) return; const t = now(); tone('p0.25', 900, t, 0.4, 0.16, { to: 160, vib: true, vibRate: 18, vibDepth: 0.06, vibDelay: 0 }); seq([null, null, null, null, 'E7'], 'p0.125', 0.07, 0.1); },
+  thoom() { if (!ac) return; const t = now(); tone('triangle', 70, t, 0.9, 0.7, { to: 28 }); noise(t, 0.7, 0.5, { freq: 220, type: 'lowpass' }); noise(t, 0.2, 0.3, { freq: 2600, q: 2, metal: true }); },
+  /* the Dragon King's great gong: a low, shimmering BWONNG that rolls on and on */
+  gong() {
+    if (!ac) return;
+    const t = now();
+    noise(t, 0.12, 0.4, { freq: 900, q: 1.5, metal: true });
+    [[98, 0.42], [196 * 1.18, 0.16], [98 * 2.76, 0.1], [98 * 5.4, 0.05]].forEach(([f, v]) => tone('triangle', f, t, 3.2, v, { vib: true, vibRate: 3.5, vibDepth: 0.01, vibDelay: 0.2, sustain: 0.6, release: 2.4 }));
+  },
+  meow() { if (!ac) return; const t = now(); tone('triangle', 620, t, 0.32, 0.22, { to: 900, slide: 0.12 }); tone('triangle', 900, t + 0.14, 0.2, 0.16, { to: 560 }); },
+  snore() { if (!ac) return; const t = now(); noise(t, 0.5, 0.14, { freq: 300, q: 3, metal: true }); tone('triangle', 80, t, 0.5, 0.15, { to: 60 }); },
+  /* the old tennis ball, smacked off the gable wall */
+  thwack() { if (!ac) return; const t = now(); noise(t, 0.05, 0.45, { freq: 1800, q: 1.2 }); tone('triangle', 260, t, 0.06, 0.3, { to: 140 }); },
+  /* her tune: you whistle it or hum it, and NOVA hums along (a little off-key) */
+  whistle() { jingle('whistle'); },
+  hum() { jingle('hum'); },
+  humNova() { jingle('humNova'); },
 };
 
 /* ---------- music ---------- */

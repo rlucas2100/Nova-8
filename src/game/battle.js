@@ -1,6 +1,8 @@
 /* Battles: your companion (and Enya's echo, once she reaches you) against a wild creature. Turn by turn:
    pick a move (moves cost EN, which refills a little each turn), use an item, guard, or run. Enya acts
    on her own after you: she heals, attacks with the Emerald Tiger, or flashes the GEM to daze the foe.
+   In the big fight of Chapter 2, CODY the white cat joins in with his staff. Burns and poison sting at
+   the end of every round.
    Your FURY builds as your companion gets hurt; when it's full your eyes blaze green and your warrior
    blood strikes. A COSMIC TUBE from the bag captures a weakened creature in an infinity of light. */
 import { W, H, spr, makeCanvas, hash, mix, disc } from '../engine/pixel.js';
@@ -26,6 +28,10 @@ const BGS = {
   jungle: { sky: ['#06201a', '#0c3026', '#164a34', '#22603e'], far: '#0a2a1a', near: '#123a24', ground: ['#25603f', '#1b4a30', '#3a8058'], edge: '#0a2416', tuft: ['#2fa070', '#3fc080', '#8ff0ff'], spot: 'rgba(0,20,10,0.35)', planet: null, hills: 'trees' },
   groove: { sky: ['#2c0a56', '#3e127c', '#561ca2', '#7a2ac8'], far: '#3a1660', near: '#4a1f7a', ground: ['#4a1f7a', '#3a1660', '#6a2fa8'], edge: '#2a0e48', tuft: ['#ff6ab0', '#5ff2ff', '#ffd25a'], spot: 'rgba(30,0,40,0.35)', planet: 92, hills: 'plants' },
   veil: { sky: ['#05020a', '#0e0618', '#1a0c2a', '#2a1440'], far: '#0a0414', near: '#140a22', ground: ['#1e1430', '#160e26', '#2a1c40'], edge: '#0a0414', tuft: ['#3a2a5a', '#6a4a9a', '#b06aff'], spot: 'rgba(0,0,0,0.4)', planet: null, hills: 'spires' },
+  // Chapter 2
+  mire: { sky: ['#1a2410', '#26341a', '#344a22', '#4a602a'], far: '#1e2a14', near: '#2a3a1a', ground: ['#3e4a26', '#2e3a1c', '#56602e'], edge: '#1e2a14', tuft: ['#5a6a2a', '#8a9a3a', '#c8e83a'], spot: 'rgba(10,20,0,0.35)', planet: null, hills: 'deadtrees', pools: '#9ab82a' },
+  lagoon: { sky: ['#3a8ad8', '#4aa0e0', '#6ab8e8', '#9ad0f0'], far: '#2a8a5a', near: '#c8402a', ground: ['#48b07a', '#3a9a6a', '#7ad8a8'], edge: '#2a7a52', tuft: ['#ffd23a', '#fff2a0', '#ffffff'], spot: 'rgba(0,40,20,0.3)', planet: null, hills: 'pagoda' },
+  withered: { sky: ['#2a2a32', '#3a3a44', '#4a4a56', '#5a5a66'], far: '#33333c', near: '#44444e', ground: ['#5a5a5e', '#4a4a4e', '#6e6e72'], edge: '#33333c', tuft: ['#6e6e72', '#8a8a90', '#b06aff'], spot: 'rgba(0,0,0,0.3)', planet: null, hills: 'trees' },
 };
 function background(kind) {
   const B = BGS[kind] || BGS.wilds, c = makeCanvas(W, 96), g = c.getContext('2d'), sky = B.sky;
@@ -49,6 +55,19 @@ function background(kind) {
       for (let dy = -r; dy <= r; dy++) { const w = Math.floor(Math.sqrt(r * r - dy * dy)); g.fillRect(mx - w, 60 - h - r + dy, w * 2 + 1, 1); }
       g.fillRect(mx - 6, 60 - Math.round(h * 0.4), 5, 2); g.fillRect(mx + 2, 60 - Math.round(h * 0.55), 5, 2);
     }
+  } else if (B.hills === 'deadtrees') {   // the Venom Mire: bare, crooked trees
+    for (let i = 0; i < 9; i++) {
+      const tx = Math.floor(hash(i, 7, 41) * W), th = 18 + Math.floor(hash(i, 8, 41) * 22);
+      g.fillRect(tx, 60 - th, 2, th);
+      for (let b = 0; b < 3; b++) { const by = 60 - th + 3 + b * 6, dir = (b + i) % 2 ? 1 : -1; for (let k = 0; k < 5; k++) g.fillRect(tx + dir * k, by - Math.floor(k / 2), 1, 1); }
+    }
+  } else if (B.hills === 'pagoda') {   // the Jade Lagoon: palace roofs on the far shore
+    for (const [px, pw, ph] of [[20, 26, 18], [62, 36, 26], [112, 28, 16]]) {
+      g.fillStyle = B.near; g.fillRect(px + 3, 60 - ph, pw - 6, ph);
+      g.fillStyle = B.far;
+      for (let r = 0; r < 2; r++) { const ry = 60 - ph - 4 + r * 9, rw = pw + 6 - r * 4; g.fillRect(px - 3 + r * 2, ry, rw, 3); g.fillRect(px - 5 + r * 2, ry - 1, 2, 2); g.fillRect(px + rw - 5 + r * 2, ry - 1, 2, 2); }
+    }
+    g.fillStyle = '#1aa8b8'; g.fillRect(0, 56, W, 4);
   } else {   // beyond the veil: twisted black spires
     for (let x = 0; x < W; x++) { const h = 8 + Math.round(Math.abs(Math.sin(x / 7)) * 14 * hash(Math.floor(x / 7), 0, 31)); g.fillRect(x, 60 - h, 1, h); }
   }
@@ -58,6 +77,7 @@ function background(kind) {
   const grd = B.ground;
   for (let y = 60; y < 96; y++) for (let x = 0; x < W; x++) { const r = hash(x, y, 4); g.fillStyle = r < 0.08 ? grd[2] : r < 0.2 ? grd[1] : grd[0]; g.fillRect(x, y, 1, 1); }
   g.fillStyle = B.edge; g.fillRect(0, 60, W, 1);
+  if (B.pools) for (const [px, py, pw] of [[8, 70, 22], [70, 66, 16], [136, 80, 18], [96, 92, 24]]) { g.fillStyle = B.pools; g.fillRect(px, py, pw, 3); g.fillRect(px + 2, py - 1, pw - 4, 5); g.fillStyle = '#f0ff8a'; g.fillRect(px + 3, py, 2, 1); }
   // tufts (glowgrass, ferns, alien sprouts) with glowing tips
   for (let i = 0; i < 22; i++) {
     const x = Math.floor(hash(i, 5, 7) * W), y = 64 + Math.floor(hash(i, 6, 7) * 30);
@@ -83,16 +103,18 @@ export class Battle {
     this.foe = { side: 'foe', ...foe, stages: { atk: 0, def: 0, acc: 0, spd: 0 }, status: {}, disp: foe.hp };
     this.enyaHere = enyaWith(st);
     this.enyaCool = { flash: 1, cheer: 0 };
+    this.codyHere = !!opt.cody;   // CODY fights beside you (his staff extends, flies and grows on command)
+    this.codyN = 0; this.codyCheer = 0;
     this.fury = opt.fury || 0;
-    const area = world && world.map ? world.map.id : 'wilds';
-    this.bg = background(foe.ghoul ? 'veil' : foe.big ? 'boss' : { jungle: 'jungle', groove: 'groove' }[area] || 'wilds');
+    const area = world && world.map ? world.map.id : 'wilds', healed = world && world.healed && world.healed();
+    this.bg = background(opt.bg || (foe.ghoul ? 'veil' : foe.big ? 'boss' : { jungle: 'jungle', groove: 'groove', mire: 'mire', lagoon: 'lagoon', deep: healed ? 'jungle' : 'withered' }[area] || 'wilds'));
     this.fx = [];
-    this.anim = { me: { dx: -120, dy: 0, blink: 0, hide: false }, foe: { dx: 120, dy: 0, blink: 0, hide: false, sink: 0, scale: 1, white: 0 }, enya: { dx: this.enyaHere ? -120 : -200, dy: 0, blink: 0 } };
+    this.anim = { me: { dx: -120, dy: 0, blink: 0, hide: false }, foe: { dx: 120, dy: 0, blink: 0, hide: false, sink: 0, scale: 1, white: 0 }, enya: { dx: this.enyaHere || this.codyHere ? -120 : -200, dy: 0, blink: 0 } };
     this.phase = 'intro';
     this.prompt = null;
     this.result = new Promise((r) => { this.resolve = r; });
     this.t = 0;
-    playMusic(foe.ghoul ? 'ghoul' : foe.boss ? 'boss' : Math.random() < 0.5 ? 'battle' : 'battle2');
+    playMusic(opt.music || (foe.ghoul ? 'ghoul' : foe.boss ? 'boss' : Math.random() < 0.5 ? 'battle' : 'battle2'));
     this.go().catch((e) => { console.error(e); this.end('run'); });
   }
 
@@ -104,7 +126,9 @@ export class Battle {
     this.anim.foe.wig = 20;
     await this.msg(WILD[foe.species].intro);
     if (foe.ghoul) { this.addFury(25); await this.msg('Your eyes flicker green at the sight of it. Your FURY rises!'); }
+    if (foe.shadow) { this.addFury(25); await this.msg('Those violet eyes... the same shadow as the ghouls! Your FURY rises!'); }
     if (this.enyaHere) await this.msg("ENYA's echo and the EMERALD TIGER fight beside you!");
+    if (this.codyHere) await this.msg('CODY: Right then. Staff, wake up. We have work to do.', 0, 'CODY');
     ({ tiger: sfx.rawr, dragon: sfx.puff, octo: sfx.blub }[this.game.state.pet.species] || sfx.wiggle)();
     this.anim.me.dy = -6; this.game.wait(8).then(() => { this.anim.me.dy = 0; });
     await this.msg('Go, ' + me.name + '!');
@@ -137,18 +161,21 @@ export class Battle {
       if (foe.hp <= 0) return this.win();
       if (me.hp <= 0) return this.lose();
       if (this.enyaHere) { await this.enyaAct(); if (foe.hp <= 0) return this.win(); }
+      if (this.codyHere) { await this.codyAct(); if (foe.hp <= 0) return this.win(); }
       // your warrior blood boils over
       if (this.fury >= 100) { await this.furyBurst(); if (foe.hp <= 0) return this.win(); }
-      // end of the round: burns, wearing-off effects, a little energy back
+      // end of the round: burns and poison, wearing-off effects, a little energy back
       for (const u of [me, foe]) {
-        if (u.status.burn > 0 && u.hp > 0) {
-          const d = Math.max(1, Math.round(u.maxHp / 12));
+        for (const [st, div, hurt, healed] of [['burn', 12, ' is hurt by its burn!', "'s burn healed."], ['poison', 10, ' is hurt by poison!', ' shook off the poison.']]) {
+          if (!(u.status[st] > 0) || u.hp <= 0) continue;
+          const d = Math.max(1, Math.round(u.maxHp / div));
+          if (st === 'poison') { sfx.poison(); for (let i = 0; i < 6; i++) this.fx.push({ k: 'dot', x: this.pos(u).x + rnd(-10, 10), y: this.pos(u).y + rnd(-4, 8), vx: 0, vy: -rnd(0.3, 0.7), life: 24, t: -i * 2, col: i % 2 ? '#c8ff3a' : '#a050e0' }); }
           await this.flashHit(u);
           u.hp = Math.max(0, u.hp - d);
           if (u === me) this.addFury(8);
           await this.drain(u);
-          await this.msg(u.name + ' is hurt by its burn!');
-          if (--u.status.burn <= 0) await this.msg(u.name + "'s burn healed.");
+          await this.msg(u.name + hurt);
+          if (--u.status[st] <= 0) await this.msg(u.name + healed);
         }
         u.status.flinch = false;
       }
@@ -204,9 +231,15 @@ export class Battle {
         dmg = Math.max(1, Math.round(dmg));
         (c ? sfx.crit : sfx.hit)();
         target.hp = Math.max(0, target.hp - dmg);
-        if (target === this.me) this.addFury((dmg / target.maxHp) * 150 * (this.foe.ghoul ? 1.5 : 1) + (c ? 10 : 0));
+        if (target === this.me) this.addFury((dmg / target.maxHp) * 150 * (this.foe.ghoul || this.foe.shadow ? 1.5 : 1) + (c ? 10 : 0));
         await this.flashHit(target, c);
         await this.drain(target);
+        if (mv.drain && user.hp > 0 && user.hp < user.maxHp) {   // it drinks the life it takes
+          user.hp = Math.min(user.maxHp, user.hp + Math.max(1, Math.round(dmg * mv.drain)));
+          this.spawnGlow(this.pos(user), '#b06aff');
+          await this.drain(user);
+          await this.msg(user.name + ' drank in some of the life it took!');
+        }
       }
       if (hits > 1) await this.msg('Hit ' + hits + ' times!');
       if (crit) await this.msg('A critical hit!');
@@ -214,6 +247,7 @@ export class Battle {
     }
     if (mv.dodge) { user.status.dodge = true; await this.msg(user.name + ' blinks away in a flash of light!'); }
     if (mv.burn && !target.status.burn && Math.random() < mv.burn) { target.status.burn = 3; await this.msg(target.name + ' was burned!'); }
+    if (mv.poison && !target.status.poison && Math.random() < mv.poison) { target.status.poison = 4; sfx.poison(); await this.msg(target.name + ' was poisoned!'); }
     if (mv.daze && Math.random() < mv.daze * (target.boss ? 0.5 : 1)) { target.status.daze = true; await this.msg(target.name + ' is dazed!'); }
     if (mv.flinch && !target.acted && Math.random() < mv.flinch * (target.boss ? 0.5 : 1)) target.status.flinch = true;
     if (mv.debuff) { if (target === this.me) this.addFury(6); await this.stage(target, mv.debuff.stat, mv.debuff.by); }
@@ -385,6 +419,65 @@ export class Battle {
     await this.flashHit(foe);
     await this.drain(foe);
   }
+  /* ---------- CODY, the wise white cat, fighting beside you ----------
+     His staff does what it's told: EXTEND (a long jab), FLY (it spins out and back, twice), BIG (seven thousand
+     kilos of staff, slammed down). If your companion's flagging he tosses it a GLOWBERRY instead. */
+  async codyAct() {
+    const g = this.game, me = this.me, foe = this.foe;
+    if (--this.codyCheer < 0 && me.hp < me.maxHp * 0.4) {
+      this.codyCheer = 3;
+      await this.msg('CODY: Chin up, ' + me.name + '! Catch!', 0, 'CODY');
+      sfx.heal(); this.spawnGlow(this.pos(me), '#5fe07a');
+      me.hp = Math.min(me.maxHp, me.hp + Math.round(me.maxHp * 0.3));
+      await this.drain(me);
+      await this.msg(me.name + ' munches a GLOWBERRY. HP restored!');
+      return;
+    }
+    const kind = ['extend', 'fly', 'big'][this.codyN++ % 3];
+    await this.msg({ extend: 'CODY: Staff... EXTEND!', fly: 'CODY: Staff... FLY!', big: 'CODY: Staff... BIG! Seven thousand kilos, coming down!' }[kind], 0, 'CODY');
+    const tp = this.pos(foe), A = 12 + me.lv * 1.9, D = foe.def * STAGE[foe.stages.def];
+    const hit = async (pow, big) => {
+      const dmg = Math.max(1, Math.round((pow * A) / (D + 12) * 0.36 * rnd(0.9, 1)));
+      (big ? sfx.crit : sfx.hit)();
+      foe.hp = Math.max(0, foe.hp - dmg);
+      await this.flashHit(foe, big);
+      await this.drain(foe);
+    };
+    if (kind === 'extend') {
+      sfx.grow();
+      const s = { k: 'staffx', x0: 29, y0: 66, x1: 29, y1: 66, life: 999, t: 0 };
+      this.fx.push(s);
+      for (let i = 1; i <= 10; i++) { s.x1 = 29 + (tp.x - 6 - 29) * (i / 10); s.y1 = 66 + (tp.y - 66) * (i / 10); await g.wait(1); }
+      g.shake(8, 2); this.fx.push({ k: 'star', x: tp.x, y: tp.y, life: 14, t: 0, col: '#ffd23a' });
+      await hit(52);
+      for (let i = 9; i >= 0; i--) { s.x1 = 29 + (tp.x - 6 - 29) * (i / 10); s.y1 = 66 + (tp.y - 66) * (i / 10); await g.wait(1); }
+      s.life = 0;
+    } else if (kind === 'fly') {
+      sfx.whoosh();
+      const s = { k: 'staffspin', x: 29, y: 60, a: 0, life: 999, t: 0 };
+      this.fx.push(s);
+      for (let pass = 0; pass < 2; pass++) {
+        for (let i = 0; i <= 14; i++) { const k = i / 14; s.x = 29 + (tp.x - 29) * k; s.y = 60 + (tp.y - 60) * k - Math.sin(k * Math.PI) * 16; s.a += 0.6; await g.wait(1); }
+        g.shake(6, 2); this.fx.push({ k: 'star', x: tp.x, y: tp.y, life: 12, t: 0, col: '#ffd23a' });
+        await hit(28);
+        if (foe.hp <= 0) break;
+        for (let i = 14; i >= 0; i--) { const k = i / 14; s.x = 29 + (tp.x - 29) * k; s.y = 60 + (tp.y - 60) * k + Math.sin(k * Math.PI) * 10; s.a += 0.6; await g.wait(1); }
+        sfx.whoosh();
+      }
+      s.life = 0;
+    } else {
+      sfx.grow();
+      const s = { k: 'staffbig', x: tp.x, y: -60, life: 999, t: 0 };
+      this.fx.push(s);
+      for (let i = 0; i <= 12; i++) { s.y = -60 + (tp.y - 30 + 60) * (i / 12) ** 2; await g.wait(1); }
+      sfx.thoom(); g.shake(24, 4); g.flash('#fff6a0', 8);
+      for (let i = 0; i < 10; i++) this.fx.push({ k: 'dot', x: tp.x + rnd(-14, 14), y: tp.y + 14, vx: rnd(-1.2, 1.2), vy: -rnd(0.4, 1.4), life: 24, t: 0, col: i % 2 ? '#c8b080' : '#ffd23a' });
+      await hit(72, true);
+      if (foe.hp > 0 && !foe.status.daze && Math.random() < (foe.boss ? 0.35 : 0.6)) { foe.status.daze = true; await this.msg(foe.name + ' is seeing stars!'); }
+      s.life = 0;
+    }
+  }
+
   /* someone said "Em" or "Gem": NOVA's hearts float up */
   onLove(g) {
     if (g.state.pet.species !== 'tiger' || this.anim.me.hide || g.t - (this.loveT ?? -999) < 40) return;
@@ -464,13 +557,13 @@ export class Battle {
       if (i === 0) {
         const pet = st.pet;
         const items = pet.moves.map((m) => ({ label: MOVES[m].name, right: MOVES[m].en + 'EN', disabled: MOVES[m].en > me.en }));
-        const j = await g.menu(items, { x: 52, y: 142 - items.length * 11 - 9, w: 106, index: this.lastMove || 0, under: (ctx, k) => this.drawMoveInfo(ctx, pet.moves[k]) });
+        const j = await g.menu(items, { x: 46, y: 142 - items.length * 11 - 9, w: 112, index: this.lastMove || 0, under: (ctx, k) => this.drawMoveInfo(ctx, pet.moves[k]) });
         if (j < 0) continue;
         this.lastMove = j;
         return { type: 'move', move: pet.moves[j] };
       }
       if (i === 1) {
-        const ids = Object.keys(ITEMS).filter((k) => st.bag[k] > 0);
+        const ids = Object.keys(ITEMS).filter((k) => st.bag[k] > 0 && !ITEMS[k].levelup);   // GOLDEN CATNIP is for the BAG screen
         if (!ids.length) { await this.msg('Your bag has nothing useful in it.'); continue; }
         const j = await g.menu(ids.map((k) => ({ label: ITEMS[k].name, right: '×' + st.bag[k] })), { x: 52, y: 142 - ids.length * 11 - 9, w: 106, under: (ctx, k) => this.drawInfo(ctx, ITEMS[ids[k]].desc) });
         if (j < 0) continue;
@@ -490,7 +583,7 @@ export class Battle {
     for (let i = 0; i <= 26; i++) {
       const k = 1 - Math.pow(1 - i / 26, 3);
       this.anim.me.dx = -120 * (1 - k); this.anim.foe.dx = 120 * (1 - k);
-      if (this.enyaHere) this.anim.enya.dx = -120 * (1 - k);
+      if (this.enyaHere || this.codyHere) this.anim.enya.dx = -120 * (1 - k);
       await this.game.wait(1);
     }
   }
@@ -632,6 +725,42 @@ export class Battle {
         this.sparkleAt(tp.x, tp.y, 12, ['#ffffff', '#c8f4ff', '#ffd23a']);
         await g.wait(30); break;
       }
+      case 'firering': {   // CODY's lesson: rings of fire pulse out from NOVA, stretch across and swallow the foe
+        sfx.fireRing(); g.shake(10, 2);
+        for (let i = 0; i < 3; i++) { this.fx.push({ k: 'fring', x: up.x, y: up.y + 8, life: 34, t: 0 }); await g.wait(7); }
+        await g.wait(10);
+        sfx.flame(); g.flash('#ff8a1e', 10);
+        for (let i = 0; i < 40; i++) { this.fx.push({ k: 'flame', x: tp.x + rnd(-16, 16), y: tp.y + rnd(-4, 16), vy: -rnd(0.6, 1.4), life: 26, t: 0 }); if (i % 2) await g.wait(1); }
+        this.fx.push({ k: 'star', x: tp.x, y: tp.y, life: 18, t: 0, col: '#ff8a1e' });
+        await g.wait(12); break;
+      }
+      case 'bite':   // two fangs, snapping shut
+        sfx.slash(); if (side) lunge(10, 5);
+        for (const dx of [-4, 4]) this.fx.push({ k: 'fang', x: tp.x + dx, y: tp.y - 10, life: 16, t: 0 });
+        g.shake(6, 1); await g.wait(18); break;
+      case 'hiss':
+        sfx.hiss();
+        for (let i = 0; i < 4; i++) { this.fx.push({ k: 'arc', x: up.mouth.x, y: up.mouth.y, dir, life: 26, t: 0, col: i % 2 ? '#c8ff3a' : '#6ac83a' }); await g.wait(6); }
+        await g.wait(12); break;
+      case 'venom': sfx.spit(); await stream(['#c8ff3a', '#a0e02a', '#a050e0', '#f0ffb0'], 16, 2); this.sparkleAt(tp.x, tp.y, 10, ['#c8ff3a', '#a050e0']); break;
+      case 'coil': sfx.guard(); for (let i = 0; i < 3; i++) this.fx.push({ k: 'ring', x: up.x, y: up.y + 8, life: 26, t: -i * 6, col: '#ffe23a' }); await g.wait(30); break;
+      case 'ooze': sfx.ink(); await stream(['#9ab82a', '#c8e83a', '#6a8a1a', '#f0ff8a'], 26, 3); this.fx.push({ k: 'star', x: tp.x, y: tp.y, life: 14, t: 0, col: '#c8e83a' }); break;
+      case 'jade': sfx.flame(); await stream(['#5fe07a', '#2fae5a', '#ffd23a', '#e8fff0'], 30, 2); this.fx.push({ k: 'star', x: tp.x, y: tp.y, life: 16, t: 0, col: '#5fe07a' }); break;
+      case 'tide':   // a wave of lagoon water, crashing across
+        sfx.wave(); sfx.whoosh();
+        this.fx.push({ k: 'tidewave', x: up.x, x1: tp.x, y: tp.y + 12, life: 30, t: 0 });
+        await g.wait(26); g.shake(14, 2); await g.wait(8); break;
+      case 'drain': {   // the life it takes streams back to it
+        sfx.cry('ghoul');
+        for (let i = 0; i < 22; i++) { this.fx.push({ k: 'shot', x: tp.x + rnd(-8, 8), y: tp.y + rnd(-8, 8), tx: up.x, ty: up.y, life: 18, t: 0, col: ['#b06aff', '#e6d8ff', '#5a2a8a'][i % 3], size: 1 }); await g.wait(1); }
+        await g.wait(14); break;
+      }
+      case 'wither': {
+        sfx.whoosh();
+        for (let i = 0; i < 14; i++) { this.fx.push({ k: 'puff', x: tp.x + rnd(-14, 14), y: tp.y + rnd(-10, 10), life: 40, t: 0, col: ['#8a8698', '#5a566a', '#d0ccdc'][i % 3] }); await g.wait(2); }
+        await g.wait(16); break;
+      }
+      case 'shadowbreath': sfx.cry('ghoul'); g.shake(10, 2); await stream(['#2a1640', '#5a2a8a', '#0a0410', '#c86aff'], 32, 3); this.fx.push({ k: 'star', x: tp.x, y: tp.y, life: 16, t: 0, col: '#c86aff' }); break;
       case 'epounce': {
         const a = this.anim.enya;
         sfx.roar();
@@ -682,8 +811,15 @@ export class Battle {
       if (A.foe.sink) ctx.restore();
       if (foe.status.daze && t % 40 < 30 && s === 1) this.drawDizzy(ctx, 118 + A.foe.dx, y - 2, t);
     }
+    // CODY, behind your companion, leaning on his staff (in his shades, by now)
+    if (this.codyHere) {
+      const b = BATTLERS[g.state.flags['cody-shades'] ? 'codyShades' : 'cody'], img = spr(b.rows, b.pal), bob = Math.round(Math.sin(t / 22));
+      const busy = this.fx.some((f) => f.k === 'staffx' || f.k === 'staffspin' || f.k === 'staffbig');
+      if (!busy) ctx.drawImage(img, Math.round(4 + A.enya.dx), Math.round(84 - img.height + bob));
+      else { ctx.save(); ctx.beginPath(); ctx.rect(0, 0, Math.round(4 + A.enya.dx) + 24, H); ctx.clip(); ctx.drawImage(img, Math.round(4 + A.enya.dx), Math.round(84 - img.height + bob)); ctx.restore(); }   // the staff is out doing the work
+    }
     // Enya's echo, behind your companion: see-through, and she flickers
-    if (this.enyaHere || A.enya.dx > -190) {
+    if (this.enyaHere || (!this.codyHere && A.enya.dx > -190)) {
       const b = BATTLERS.enya, img = spr(b.rows, b.pal), bob = Math.round(Math.sin(t / 18 + 1));
       ctx.globalAlpha = t % 170 < 4 ? 0.35 : 0.78 + 0.12 * Math.sin(t / 15);
       ctx.drawImage(img, Math.round(2 + A.enya.dx), Math.round(84 - img.height + bob + A.enya.dy));
@@ -716,6 +852,17 @@ export class Battle {
       ctx.fillStyle = i % 2 ? '#ffd23a' : '#ffffff';
       const x = Math.round(cx + Math.cos(a) * 9), yy = Math.round(y + Math.sin(a) * 3);
       ctx.fillRect(x, yy, 1, 1); ctx.fillRect(x - 1, yy, 3, 1); ctx.fillRect(x, yy - 1, 1, 3);
+    }
+  }
+  /* Cody's staff from (x0, y0) to (x1, y1), thick wood with gold bands */
+  drawStaffFx(ctx, x0, y0, x1, y1, thick = 2) {
+    const len = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0)));
+    for (const pass of [0, 1]) for (let i = 0; i <= len; i++) {
+      const x = Math.round(x0 + ((x1 - x0) * i) / len), y = Math.round(y0 + ((y1 - y0) * i) / len);
+      if (!pass) { ctx.fillStyle = '#1a0f2e'; ctx.fillRect(x - 1, y - 1, thick + 2, thick + 2); continue; }
+      const band = i < 3 || i > len - 3 || i % 14 === 7;
+      ctx.fillStyle = band ? '#ffd23a' : '#9a6232'; ctx.fillRect(x, y, thick, thick);
+      if (!band) { ctx.fillStyle = '#c88a4a'; ctx.fillRect(x, y, 1, 1); }
     }
   }
   /* a COSMIC TUBE: silver caps, and inside the glass an infinity of light, frames inside frames forever */
@@ -822,13 +969,15 @@ export class Battle {
     const nm = foe.short;
     box(ctx, 82, 2, 76, 22);
     text(ctx, nm, 87, 6, C.text);
-    text(ctx, 'Lv' + foe.lv, 153, 6, C.gold, { align: 'right' });
+    if (measure(nm) + measure('Lv' + foe.lv) + 4 <= 66) text(ctx, 'Lv' + foe.lv, 153, 6, C.gold, { align: 'right' });   // long boss names win
     text(ctx, 'HP', 87, 15, C.dim); bar(ctx, 99, 17, 54, foe.disp / foe.maxHp, hpColour(foe.disp / foe.maxHp));
     const tags = [];
     if (foe.status.burn) tags.push('BRN');
+    if (foe.status.poison) tags.push('PSN');
     if (foe.status.daze) tags.push('DAZED');
     if (tags.length) { box(ctx, 82, 23, measure(tags.join(' ')) + 10, 12, { bg: C.bg2 }); text(ctx, tags.join(' '), 87, 26, C.red); }
-    if (me.status.burn) { box(ctx, 2, 41, 26, 12, { bg: C.bg2 }); text(ctx, 'BRN', 7, 44, C.red); }
+    const mine = [me.status.burn ? 'BRN' : '', me.status.poison ? 'PSN' : ''].filter(Boolean).join(' ');
+    if (mine) { box(ctx, 2, 41, measure(mine) + 10, 12, { bg: C.bg2 }); text(ctx, mine, 7, 44, me.status.poison && !me.status.burn ? '#c8ff3a' : C.red); }
   }
   /* a little eye: green, blazing brighter as your FURY builds */
   drawFuryEye(ctx, x, y) {
@@ -846,7 +995,7 @@ export class Battle {
   }
   drawMoveInfo(ctx, id) {
     const m = MOVES[id];
-    box(ctx, 2, 98, 48, 44);
+    box(ctx, 2, 98, 43, 44);
     text(ctx, m.pow ? 'POW ' + m.pow : 'STATUS', 7, 104, C.gold);
     text(ctx, 'ACC ' + (m.acc || 100), 7, 114, C.text);
     text(ctx, 'EN ' + m.en, 7, 124, m.en > this.me.en ? C.red : C.cyan);
@@ -969,6 +1118,31 @@ export class Battle {
         }
         break;
       }
+      case 'fring': {   // a ring of fire stretching out from NOVA, squashed flat on the ground
+        const r = 6 + p * 120, cols = ['#fff6c8', '#ffd23a', '#ff8a1e', '#e8302a'];
+        ctx.globalAlpha = Math.min(1, (1 - p) * 2);
+        for (let i = 0; i < 64; i++) {
+          const a = (i / 64) * Math.PI * 2, fl = Math.sin(i * 2.1 + f.t) * 2, x = Math.round(f.x + Math.cos(a) * (r + fl)), y = Math.round(f.y + Math.sin(a) * (r + fl) * 0.38);
+          ctx.fillStyle = cols[(i + (f.t >> 1)) % 4]; ctx.fillRect(x, y, 2, 2);
+          if (i % 2) { ctx.fillStyle = '#ff6a1a'; ctx.fillRect(x, y - 2 - ((i + f.t) % 4), 1, 2); }
+        }
+        break;
+      }
+      case 'fang': {
+        ctx.globalAlpha = 1 - p * 0.5; ctx.fillStyle = '#ffffff';
+        const k = Math.min(1, p * 3), y = Math.round(f.y + k * 10);
+        ctx.fillRect(f.x, y, 2, 6); ctx.fillRect(f.x, y + 6, 1, 2); ctx.fillStyle = '#c8ff3a'; ctx.fillRect(f.x + 1, y + 7, 1, 1);
+        break;
+      }
+      case 'tidewave': {   // a curling wave sweeping from one side to the other
+        const x = Math.round(f.x + (f.x1 - f.x) * p * 1.3), h = Math.round(18 * Math.sin(Math.min(1, p * 1.5) * Math.PI));
+        ctx.globalAlpha = 0.9;
+        for (let i = -16; i <= 16; i++) { const hh = Math.max(0, h - Math.abs(i) * 0.8); ctx.fillStyle = '#1aa8b8'; ctx.fillRect(x + i, f.y - hh, 1, hh); ctx.fillStyle = '#e8ffff'; ctx.fillRect(x + i, f.y - hh, 1, 1); }
+        break;
+      }
+      case 'staffx': ctx.globalAlpha = 1; this.drawStaffFx(ctx, f.x0, f.y0, f.x1, f.y1); break;
+      case 'staffspin': { ctx.globalAlpha = 1; const dx = Math.cos(f.a) * 12, dy = Math.sin(f.a) * 12; this.drawStaffFx(ctx, f.x - dx, f.y - dy, f.x + dx, f.y + dy); break; }
+      case 'staffbig': { ctx.globalAlpha = 1; this.drawStaffFx(ctx, f.x, f.y - 40, f.x, f.y + 26, 6); break; }
       case 'burst': {   // rays from Enya's necklace
         ctx.globalAlpha = 1 - p;
         for (let i = 0; i < 16; i++) {

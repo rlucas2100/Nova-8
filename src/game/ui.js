@@ -41,6 +41,7 @@ const LOVE = /\b(e+m+|g+e+m+)\b/i;
 const VOICE_OF = {
   SPRIG: 'robot', 'GATE DRONE': 'robot', ENYA: 'enya', MOSSA: 'low', PEBBLE: 'kid', SKYE: 'kid', BUD: 'kid',
   LUMEN: 'lumen', 'DJ JIGGLE': 'dj', BLOOP: 'jelly', WOBBLE: 'jelly', SQUISH: 'jelly', PLINK: 'jelly', GLOOP: 'jelly', HUM: 'jelly', 'JELLY FERRY': 'jelly',
+  CODY: 'cody', 'DRAGON KING': 'dragon', 'WHITE DRAGON': 'dragon', 'BLACK DRAGON': 'dragon', 'CRAB GUARD': 'crab', 'CRAB CAPTAIN': 'crab', 'MR NOLAN': 'low',
 };
 export class Dialog {
   constructor(game, str, opt = {}) {

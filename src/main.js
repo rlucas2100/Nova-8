@@ -16,6 +16,8 @@ import * as CH from './art/chars.js';
 const WALKERS = {
   hero: [CH.HERO.down[0], CH.HERO_PAL], heroFury: [CH.HERO.down[0], CH.HERO_PAL_FURY],
   lumen: [CH.LUMEN, CH.LUMEN_PAL], dj: [CH.JELLY_DJ[0], CH.JELLY_PALS.violet], jelly: [CH.JELLY[0], CH.JELLY_PALS.pink],
+  turtleGreen: [CH.TURTLE.side[0], CH.TURTLE_PALS.green], turtlePurple: [CH.TURTLE.side[0], CH.TURTLE_PALS.purple], turtleYellow: [CH.TURTLE.side[0], CH.TURTLE_PALS.yellow],
+  crab: [CH.CRAB[0], CH.CRAB_PALS.red],
 };
 
 function sprites() {

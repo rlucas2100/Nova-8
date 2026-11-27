@@ -1,5 +1,8 @@
-/* The areas of Chapter 1 on planet Kirra: Bloomhaven, the Crimson Wilds, the Whisperwood (a jungle
-   east of the Wilds) and the Jelly Jam (islands of purple alien plants floating below the Wilds' cliffs).
+/* The areas on planet Kirra. Chapter 1: Bloomhaven, the Crimson Wilds, the Whisperwood (a jungle east of
+   the Wilds) and the Jelly Jam (islands of purple alien plants floating below the Wilds' cliffs).
+   Chapter 2, reached by the COMET's short hops: the Venom Mire, the Jade Lagoon and the Withered Deep
+   (past the Whisperwood). A map's 'swaps' change its ground once a flag is set; 'need' is the opposite
+   of 'flag' (only there once it's set); a prop's 'alt' is what it becomes after a flag.
    Ground letters are explained in src/art/tiles.js (TILE). Props, people, pick-ups and triggers are
    listed per map; a prop's x, y is the top-left tile of its solid footprint, and a prop or person
    with a flag disappears once that flag is set. */
@@ -61,6 +64,7 @@ export const BLOOMHAVEN = {
     { id: 'sol', art: 'bloom', pal: 'sun', x: 19, y: 12, dir: 'left', talk: 'b3', wander: true },
     { id: 'skye', art: 'bloom', pal: 'sky', x: 13, y: 16, dir: 'down', talk: 'b4', wander: true },
     { id: 'reef', art: 'bloom', pal: 'coral', x: 27, y: 4, dir: 'left', talk: 'b5' },
+    { id: 't-bg', art: 'turtle', pal: 'green', x: 4, y: 16, dir: 'right', talk: 'turtle', wander: true },
   ],
   warps: [{ x: 29, y: 11, to: 'wilds', tx: 1, ty: 11, dir: 'right' }],
   jewels: [
@@ -157,6 +161,9 @@ export const WILDS = {
     { id: 'alpha', art: 'thornback', x: 13, y: 21, dir: 'left', big: true, talk: 'alpha', flag: 'alpha-beaten' },
     { id: 'rustclaw', art: 'rustclaw', x: 38, y: 25, dir: 'left', big: true, talk: 'rustclaw', flag: 'rustclaw-beaten' },
     { id: 'ferry', art: 'jelly', pal: 'gold', x: 27, y: 3, dir: 'down', talk: 'ferryDown', hover: true },
+    { id: 'cody', art: 'cody', x: 14, y: 9, dir: 'down', talk: 'cody', flag: 'cody-wilds', sleep: true },
+    { id: 't-wg', art: 'turtle', pal: 'green', x: 18, y: 17, dir: 'left', talk: 'turtle', wander: true },
+    { id: 't-wy', art: 'turtle', pal: 'yellow', x: 31, y: 24, dir: 'down', talk: 'turtle', wander: true },
   ],
   warps: [
     { x: 0, y: 11, to: 'bloomhaven', tx: 28, ty: 11, dir: 'left' },
@@ -212,6 +219,7 @@ function buildJungle() {
   for (let y = 0; y < H; y++) for (const x of [24, 25]) m.set(x, y, hash(x, y, 90) < 0.2 ? 'a' : '~');
   for (const y of [9, 17, 26]) { m.set(22, y, 'j'); m.set(23, y, 'j'); m.set(24, y, '='); m.set(25, y, '='); m.set(26, y, 'j'); m.set(27, y, 'j'); }
   m.set(0, 12, 'j'); m.set(0, 13, 'T');
+  trail(36, 19, 37, 19); m.line(37, 19, 39, 19, 'j');   // east, into the Withered Deep (Chapter 2)
   return m.rows();
 }
 const JUNGLE_ROWS = buildJungle();
@@ -228,11 +236,15 @@ export const JUNGLE = {
     { t: 'crystal3', x: 5, y: 15 }, { t: 'crystal2', x: 36, y: 22 }, { t: 'crystal3', x: 12, y: 23 },
     { t: 'shroom', x: 16, y: 22 },
     { t: 'sign', x: 3, y: 14, text: 'THE WHISPERWOOD\nThe LIGHT KEEPER lives by the old gate, over the stream to the north-east.' },
+    { t: 'deadvines', x: 38, y: 19, id: 'vines', talk: 'vines', flag: 'deep-healed' },
   ],
   npcs: [
     { id: 'lumen', art: 'lumen', x: 34, y: 4, dir: 'down', talk: 'lumen', hover: true },
+    { id: 'cody', art: 'cody', x: 15, y: 24, dir: 'down', talk: 'cody', flag: 'cody-wood' },
+    { id: 't-jg', art: 'turtle', pal: 'green', x: 9, y: 11, dir: 'right', talk: 'turtle', wander: true },
+    { id: 't-jp', art: 'turtle', pal: 'purple', x: 33, y: 27, dir: 'left', talk: 'turtle', wander: true },
   ],
-  warps: [{ x: 0, y: 12, to: 'wilds', tx: 42, ty: 12, dir: 'left' }],
+  warps: [{ x: 0, y: 12, to: 'wilds', tx: 42, ty: 12, dir: 'left' }, { x: 39, y: 19, to: 'deep', tx: 1, ty: 13, dir: 'right' }],
   triggers: [{ id: 'jungle-intro', x: 2, y: 11, w: 2, h: 3, script: 'jungleIntro' }],
   jewels: [
     { id: 'j-1', x: 3, y: 9, kind: 'gold' }, { id: 'j-2', x: 8, y: 15, kind: 'emerald' }, { id: 'j-3', x: 12, y: 10, kind: 'gold' },
@@ -292,6 +304,8 @@ export const GROOVE = {
     { id: 'plink', art: 'jelly', pal: 'gold', x: 19, y: 17, dir: 'down', talk: 'j4', hover: true, wander: true },
     { id: 'gloop', art: 'jelly', pal: 'cyan', x: 19, y: 5, dir: 'down', talk: 'j5', hover: true },
     { id: 'hum', art: 'jelly', pal: 'pink', x: 28, y: 12, dir: 'down', talk: 'j6', hover: true },
+    { id: 'cody', art: 'cody', x: 16, y: 16, dir: 'down', talk: 'cody', flag: 'cody-jam' },
+    { id: 't-gp', art: 'turtle', pal: 'purple', x: 15, y: 24, dir: 'right', talk: 'turtle', wander: true },
   ],
   warps: [],
   triggers: [],
@@ -307,4 +321,183 @@ export const GROOVE = {
   ],
 };
 
-export const MAPS = { bloomhaven: BLOOMHAVEN, wilds: WILDS, jungle: JUNGLE, groove: GROOVE };
+/* ================= Chapter 2: the COMET's short hops across Kirra ================= */
+
+/* ---------- the Venom Mire: a swamp of dead trees and thick yellow-green ooze. The WARP COIL is across the
+   widest river, where the old plank bridge has fallen in (Cody's staff fills the gap) ---------- */
+function buildMire() {
+  const W = 40, H = 30, m = grid(W, H, 'D');
+  m.blob(6, 14.5, 5, 4.6, 'm', 0.25, 110);     // the landing, where the COMET touches down
+  m.blob(18, 8.5, 6.5, 4.6, 'm', 0.3, 111);    // the north glade
+  m.blob(17, 21, 7.5, 4.4, 'm', 0.3, 112);     // the south glade
+  m.blob(22, 15, 3.6, 2.6, 'm', 0.2, 113);     // the old landing stage by the big river
+  m.blob(35.5, 15, 3.6, 6.5, 'm', 0.25, 114);  // the far bank
+  const path = (x0, y0, x1, y1) => { m.line(x0, y0, x1, y1, 'm'); m.line(x0, y0 + 1, x1, y1 + 1, 'm'); };
+  path(9, 14, 16, 12); path(16, 12, 18, 18); path(18, 14, 26, 14); path(6, 18, 12, 21);
+  // a narrow ooze stream down the west, with a little plank bridge
+  for (let y = 0; y < H; y++) for (const x of [11, 12]) m.set(x + (y > 20 ? 1 : 0), y, 'z');
+  m.set(11, 14, 'k'); m.set(12, 14, 'k'); m.set(11, 15, 'k'); m.set(12, 15, 'k');
+  m.set(13, 21, 'k'); m.set(12, 21, 'k');
+  // the big river of ooze, five wide, and the narrow bridge across it, broken in the middle
+  for (let y = 0; y < H; y++) for (let x = 27; x <= 31; x++) m.set(x, y, 'z');
+  m.set(27, 15, 'k'); m.set(28, 15, 'k'); m.set(31, 15, 'k');                              // (29, 15) and (30, 15): the gap
+  m.set(26, 15, 'm'); m.set(26, 14, 'm'); m.set(32, 15, 'm');
+  // ooze pools in the glades
+  m.blob(20, 6.5, 1.8, 1.1, 'z', 0.2, 115); m.blob(13.5, 23, 1.6, 1, 'z', 0.2, 116);
+  // reeds, where the snakes hide
+  patch(m, 18, 8.5, 3.4, 2, 'm', 'v', 120); patch(m, 18, 22, 4, 1.8, 'm', 'v', 121); patch(m, 4, 17, 1.8, 1.2, 'm', 'v', 122);
+  patch(m, 36, 12, 1.6, 2, 'm', 'v', 123);
+  return m.rows();
+}
+const MIRE_ROWS = buildMire();
+
+export const MIRE = {
+  id: 'mire', name: 'The Venom Mire', music: 'mire',
+  rows: MIRE_ROWS,
+  swaps: [{ flag: 'staff-bridge', tiles: [[29, 15, 'K'], [30, 15, 'K']] }],   // Cody's staff, across the gap
+  props: [
+    { t: 'ship', x: 3, y: 11, id: 'comet', talk: 'ship' },
+    { t: 'sign', x: 8, y: 16, text: 'THE VENOM MIRE\nMind the ooze. Mind the snakes. Mind your step on the old bridge (east).' },
+    { t: 'sign', x: 24, y: 14, text: 'DANGER! BRIDGE OUT!\nSomething big lives in the ooze. Something with FANGS.' },
+    { t: 'deadtree', x: 14, y: 6 }, { t: 'deadtree', x: 19, y: 18 }, { t: 'deadtree', x: 2, y: 13 }, { t: 'deadtree', x: 36, y: 10 },
+    { t: 'stump', x: 9, y: 11 }, { t: 'stump', x: 23, y: 9 }, { t: 'stump', x: 34, y: 20 },
+    { t: 'log', x: 15, y: 18 }, { t: 'log', x: 20, y: 23 },
+    { t: 'minishroom', x: 9, y: 16 }, { t: 'minishroom', x: 22, y: 5 }, { t: 'minishroom', x: 37, y: 17 },
+  ],
+  npcs: [
+    { id: 'oozefang', art: 'oozefang', x: 34, y: 15, dir: 'left', big: true, talk: 'oozefangTalk', flag: 'oozefang-beaten' },
+    { id: 't-mg', art: 'turtle', pal: 'green', x: 7, y: 19, dir: 'right', talk: 'turtle', wander: true },
+    { id: 't-mp', art: 'turtle', pal: 'purple', x: 21, y: 21, dir: 'left', talk: 'turtle', wander: true },
+    { id: 't-my', art: 'turtle', pal: 'yellow', x: 37, y: 18, dir: 'down', talk: 'turtle', wander: true },
+  ],
+  warps: [],
+  triggers: [
+    { id: 'mire-intro', x: 3, y: 13, w: 5, h: 3, script: 'mireIntro' },
+    { id: 'staff-bridge', x: 26, y: 14, w: 2, h: 2, script: 'mireGap' },
+    { id: 'snake-1', x: 28, y: 15, w: 1, h: 1, script: 'snake1' },
+    { id: 'snake-2', x: 30, y: 15, w: 1, h: 1, script: 'snake2' },
+    { id: 'oozefang-beaten', x: 31, y: 15, w: 2, h: 1, script: 'oozefang' },
+  ],
+  jewels: [
+    { id: 'm-1', x: 4, y: 16, kind: 'gold' }, { id: 'm-2', x: 8, y: 17, kind: 'emerald' }, { id: 'm-3', x: 15, y: 8, kind: 'gold' },
+    { id: 'm-4', x: 21, y: 10, kind: 'ruby' }, { id: 'm-5', x: 24, y: 8, kind: 'gold' }, { id: 'm-6', x: 14, y: 20, kind: 'sapphire' },
+    { id: 'm-7', x: 23, y: 22, kind: 'gold' }, { id: 'm-8', x: 16, y: 25, kind: 'emerald' }, { id: 'm-9', x: 23, y: 16, kind: 'diamond' },
+    { id: 'm-10', x: 36, y: 13, kind: 'ruby' }, { id: 'm-11', x: 34, y: 18, kind: 'gold' }, { id: 'm-12', x: 37, y: 21, kind: 'diamond' },
+  ],
+  encounters: [
+    { species: 'hissling', min: 8, max: 10, weight: 4 },
+    { species: 'spitviper', min: 9, max: 11, weight: 3 },
+    { species: 'glorp', min: 8, max: 10, weight: 2 },
+    { species: 'jadehop', min: 8, max: 10, weight: 1 },
+  ],
+};
+
+/* ---------- the Jade Lagoon: a beach, clear water, and the Dragon King's palace on its island ---------- */
+function buildLagoon() {
+  const W = 36, H = 28, m = grid(W, H, 'l');
+  m.blob(7, 21.5, 7.5, 5, 's', 0.25, 130);                                                  // the beach
+  m.blob(25.5, 9.5, 11, 9, 's', 0.12, 131);                                                 // the palace island
+  m.rect(19, 2, 14, 12, 'W'); m.rect(20, 3, 12, 10, 'J');                                  // the palace walls and courtyard
+  m.set(25, 13, 'J');                                                                       // the gate
+  for (let x = 13; x <= 21; x++) m.set(x, 20, 'h');                                        // the red bridge from the beach...
+  for (let y = 18; y <= 19; y++) m.set(21, y, 'h');                                        // ...turning up to the island
+  m.blob(5, 12.5, 1.6, 1.2, 's', 0.1, 132);                                                 // a tiny islet, over stepping stones
+  m.set(4, 14, 'O'); m.set(4, 15, 'O'); m.set(4, 16, 'O');
+  return m.rows();
+}
+const LAGOON_ROWS = buildLagoon();
+
+export const LAGOON = {
+  id: 'lagoon', name: 'The Jade Lagoon', music: 'lagoon',
+  rows: LAGOON_ROWS,
+  props: [
+    { t: 'ship', x: 2, y: 19, id: 'comet', talk: 'ship' },
+    { t: 'sign', x: 10, y: 19, text: "THE JADE LAGOON\nPalace of the DRAGON KING. Visitors: bow. Cats: GO AWAY." },
+    { t: 'palm', x: 1, y: 23 }, { t: 'palm', x: 12, y: 23 }, { t: 'palm', x: 8, y: 17 }, { t: 'palm', x: 17, y: 12 }, { t: 'palm', x: 34, y: 11 },
+    { t: 'coral', x: 4, y: 24 }, { t: 'coral', x: 10, y: 25 }, { t: 'coral', x: 32, y: 16 }, { t: 'coral', x: 6, y: 12 },
+    { t: 'palacegate', x: 24, y: 11, px: 0, py: 8 },
+    { t: 'throne', x: 24, y: 4 },
+    { t: 'gong', x: 21, y: 5, id: 'gong', talk: 'gong' },
+    { t: 'treasure', x: 29, y: 5, id: 'treasure', talk: 'treasure', alt: { flag: 'king-beaten', t: 'treasure2' } },
+    { t: 'jadepillar', x: 20, y: 9 }, { t: 'jadepillar', x: 31, y: 9 }, { t: 'jadepillar', x: 20, y: 12 }, { t: 'jadepillar', x: 31, y: 12 },
+    { t: 'stonelantern', x: 23, y: 11 }, { t: 'stonelantern', x: 27, y: 11 },
+  ],
+  npcs: [
+    { id: 'king', art: 'dragonKing', x: 24, y: 7, dir: 'down', big: true, talk: 'king' },
+    { id: 'crab1', art: 'crab', pal: 'red', x: 24, y: 15, dir: 'down', talk: 'crab' },
+    { id: 'crab2', art: 'crab', pal: 'coral', x: 26, y: 15, dir: 'down', talk: 'crab2' },
+    { id: 'cody', art: 'cody', x: 22, y: 8, dir: 'right', talk: 'cody', flag: 'cody-lagoon-gone', need: 'mire-done' },
+    { id: 'white', art: 'whiteDragon', x: 28, y: 8, dir: 'left', big: true, talk: 'white', need: 'gong', flag: 'deep-healed' },
+    { id: 't-lg', art: 'turtle', pal: 'green', x: 6, y: 22, dir: 'right', talk: 'turtle', wander: true },
+    { id: 't-ly', art: 'turtle', pal: 'yellow', x: 29, y: 16, dir: 'left', talk: 'turtle', wander: true },
+  ],
+  warps: [],
+  triggers: [
+    { id: 'lagoon-intro', x: 3, y: 21, w: 4, h: 2, script: 'lagoonIntro' },
+    { id: 'palace-scene', x: 24, y: 11, w: 3, h: 2, script: 'palace' },
+  ],
+  jewels: [
+    { id: 'l-1', x: 3, y: 22, kind: 'gold' }, { id: 'l-2', x: 9, y: 24, kind: 'sapphire' }, { id: 'l-3', x: 13, y: 21, kind: 'gold' },
+    { id: 'l-4', x: 22, y: 16, kind: 'emerald' }, { id: 'l-5', x: 34, y: 14, kind: 'gold' }, { id: 'l-6', x: 17, y: 9, kind: 'ruby' },
+    { id: 'l-7', x: 21, y: 11, kind: 'gold' }, { id: 'l-8', x: 30, y: 11, kind: 'diamond' }, { id: 'l-9', x: 5, y: 12, kind: 'diamond' },
+  ],
+};
+
+/* ---------- the Withered Deep: the jungle beyond the Whisperwood, drained grey by the Black Dragon.
+   When he's beaten, its colour floods back (the grey ground swaps for the living Whisperwood's) ---------- */
+function buildDeep() {
+  const W = 36, H = 26, m = grid(W, H, 'G');
+  m.blob(5, 13, 4.5, 3.6, 'g', 0.3, 140);       // the way in, from the Whisperwood
+  m.blob(14.5, 11.5, 6, 4.6, 'g', 0.3, 141);    // the grey glade
+  m.blob(16, 21, 6.5, 3, 'g', 0.3, 142);        // the south hollow
+  m.blob(30, 12.5, 5.2, 6.2, 'g', 0.25, 143);   // the lair, round the great dead tree
+  const trail = (x0, y0, x1, y1) => { m.line(x0, y0, x1, y1, 'g'); m.line(x0, y0 + 1, x1, y1 + 1, 'g'); };
+  trail(0, 13, 9, 13); trail(19, 12, 25, 12); trail(15, 15, 15, 19);
+  for (let y = 0; y < H; y++) for (const x of [22, 23]) m.set(x, y, 'M');               // a stream, grey and still
+  m.set(22, 12, 'Q'); m.set(23, 12, 'Q'); m.set(22, 13, 'Q'); m.set(23, 13, 'Q');
+  patch(m, 14, 11, 3.6, 2.4, 'g', 'F', 150); patch(m, 16, 21.5, 3.6, 1.4, 'g', 'F', 151); patch(m, 33, 17, 1.6, 1.4, 'g', 'F', 152);
+  return m.rows();
+}
+const DEEP_ROWS = buildDeep();
+
+export const DEEP = {
+  id: 'deep', name: 'The Withered Deep', music: 'deep',
+  rows: DEEP_ROWS,
+  swaps: [{ flag: 'deep-healed', letters: { g: 'j', G: 'T', F: 'f', M: '~', Q: '=' } }],
+  healed: { flag: 'deep-healed', name: 'The Deep', music: 'pl:jungle', encounters: [
+    { species: 'lumoth', min: 11, max: 13, weight: 3 }, { species: 'jadehop', min: 11, max: 13, weight: 3 },
+    { species: 'vinesnap', min: 12, max: 14, weight: 2 }, { species: 'mosshell', min: 12, max: 14, weight: 2 },
+  ] },
+  props: [
+    { t: 'deadvines', x: 1, y: 13, id: 'vines', talk: 'vines', flag: 'deep-healed' },
+    { t: 'lairtree', x: 28, y: 8, alt: { flag: 'deep-healed', t: 'lairtree2' } },
+    { t: 'greytree', x: 3, y: 10, alt: { flag: 'deep-healed', t: 'bigtree' } }, { t: 'greytree', x: 15, y: 8, alt: { flag: 'deep-healed', t: 'bigtree' } },
+    { t: 'greytree', x: 12, y: 22, alt: { flag: 'deep-healed', t: 'bigtree' } }, { t: 'greytree', x: 33, y: 14, alt: { flag: 'deep-healed', t: 'bigtree' } },
+    { t: 'greyflower', x: 7, y: 15, alt: { flag: 'deep-healed', t: 'glowflower' } }, { t: 'greyflower', x: 11, y: 9, alt: { flag: 'deep-healed', t: 'glowflower' } },
+    { t: 'greyflower', x: 20, y: 20, alt: { flag: 'deep-healed', t: 'glowflower' } }, { t: 'greyflower', x: 26, y: 15, alt: { flag: 'deep-healed', t: 'glowflower' } },
+    { t: 'greyflower', x: 34, y: 9, alt: { flag: 'deep-healed', t: 'glowflower' } },
+  ],
+  npcs: [
+    { id: 'black', art: 'blackDragon', x: 29, y: 11, dir: 'down', big: true, talk: 'blackTalk', alt: { flag: 'black-beaten', art: 'blackDragonCalm' } },
+    { id: 'whiteDeep', art: 'whiteDragon', x: 6, y: 11, dir: 'right', big: true, flip: true, talk: 'whiteDeep' },
+    { id: 't-dg', art: 'turtle', pal: 'green', x: 14, y: 19, dir: 'right', talk: 'turtle', wander: true, need: 'deep-healed' },
+  ],
+  warps: [{ x: 0, y: 13, to: 'jungle', tx: 38, ty: 19, dir: 'left' }],
+  triggers: [
+    { id: 'deep-intro', x: 3, y: 12, w: 4, h: 3, script: 'deepIntro' },
+    { id: 'black-beaten', x: 27, y: 13, w: 6, h: 2, script: 'blackScene' },
+  ],
+  jewels: [
+    { id: 'd-1', x: 8, y: 11, kind: 'gold' }, { id: 'd-2', x: 12, y: 14, kind: 'emerald' }, { id: 'd-3', x: 18, y: 10, kind: 'gold' },
+    { id: 'd-4', x: 20, y: 22, kind: 'sapphire' }, { id: 'd-5', x: 13, y: 20, kind: 'gold' }, { id: 'd-6', x: 26, y: 10, kind: 'ruby' },
+    { id: 'd-7', x: 33, y: 16, kind: 'diamond' }, { id: 'd-8', x: 31, y: 17, kind: 'gold' },
+  ],
+  encounters: [
+    { species: 'witherwisp', min: 11, max: 13, weight: 4 },
+    { species: 'ghoul', min: 11, max: 13, weight: 2 },
+    { species: 'vinesnap', min: 11, max: 13, weight: 2 },
+    { species: 'lumoth', min: 11, max: 12, weight: 1 },
+  ],
+};
+
+export const MAPS = { bloomhaven: BLOOMHAVEN, wilds: WILDS, jungle: JUNGLE, groove: GROOVE, mire: MIRE, lagoon: LAGOON, deep: DEEP };

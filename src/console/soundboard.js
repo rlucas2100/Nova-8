@@ -14,8 +14,10 @@ const WHERE = {
   title: 'title screen', intro: 'the crash', town: 'Bloomhaven', town2: 'Bloomhaven, taking turns', select: 'choosing a companion',
   shop: "Mossa's stall", wilds: 'the Crimson Wilds', wilds2: 'the Wilds, taking turns', ride: 'riding your companion',
   enya: "Enya's echo rides in", nest: 'near the scrap nest', battle: 'wild battles', battle2: 'wild battles', boss: 'the boss fight',
-  victory: 'after a win', chapter: 'end of Chapter 1', jungle: 'the Whisperwood', jungle2: 'the Whisperwood, taking turns',
+  victory: 'after a win', chapter: 'the end of each chapter', jungle: 'the Whisperwood', jungle2: 'the Whisperwood, taking turns',
   groove: 'the Jelly Jam', groove2: 'the Jelly Jam, taking turns', vision: 'visions beyond the veil', ghoul: 'ghoul battles',
+  cody: 'whenever CODY turns up', dream: 'dreams on the COMET', mire: 'the Venom Mire', lagoon: 'the Jade Lagoon',
+  dragon: 'the Dragon King battles', deep: 'the Withered Deep',
 };
 const battler = (n) => ({ rows: BATTLERS[n].rows, pal: BATTLERS[n].pal });
 const ICONS = {
@@ -32,6 +34,10 @@ const ICONS = {
   shatter: { rows: DIAMOND, pal: GEM_PAL.diamond }, rift: battler('enya'), memory: { rows: CH.HERO.down[0], pal: CH.HERO_PAL_SHIFT },
   tube: { rows: CH.LUMEN, pal: CH.LUMEN_PAL }, lumoth: battler('lumoth'), jadehop: battler('jadehop'), ghoul: battler('ghoul'),
   bopjelly: battler('bopjelly'), drumcap: battler('shroomboom'), scratch: { rows: CH.JELLY_DJ[0], pal: CH.JELLY_PALS.violet }, boom: battler('shroomboom'),
+  meow: { rows: CH.CODY.down[0], pal: CH.CODY_PAL }, grow: battler('cody'), shrink: { rows: CH.CODY.side[0], pal: CH.CODY_PAL }, thoom: battler('codyShades'),
+  firering: battler('tiger'), whistle: { rows: CH.HERO.down[0], pal: CH.HERO_PAL }, humnova: { rows: CH.TIGER.down[0], pal: CH.TIGER_PAL },
+  hiss: battler('hissling'), gong: battler('dragonKing'), dragon: battler('whiteDragon'), chirp: { rows: CH.TURTLE.side[0], pal: CH.TURTLE_PALS.green },
+  thwack: { rows: CH.KID.enya.swing, pal: CH.KID_ENYA_PAL },
 };
 
 function el(tag, attrs = {}, kids = []) {

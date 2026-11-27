@@ -56,19 +56,13 @@ export class World {
   load(mapId, x, y, dir) {
     const m = MAPS[mapId], st = this.st;
     this.map = m;
-    this.rows = m.rows;
-    this.mw = m.rows[0].length;
-    this.mh = m.rows.length;
-    this.frames = painted[mapId] || (painted[mapId] = paintMap(m.rows));
+    this.paintGround();
     st.map = mapId; st.x = x; st.y = y; st.dir = dir;
     this.player = { id: 'player', x, y, px: x * 16, py: y * 16, dir, moving: false, turnT: 0, parity: 0, prog: 0, bumpT: 0 };
-    this.npcs = m.npcs.filter((n) => !(n.flag && st.flags[n.flag])).map((n) => {
-      const o = { ...n, px: n.x * 16, py: n.y * 16, moving: false, parity: 0, prog: 0, wanderT: 120 + Math.random() * 200, home: { x: n.x, y: n.y } };
-      return o;
-    });
+    this.npcs = m.npcs.filter((n) => this.present(n)).map((n) => this.makeNpc(n));
     if (st.flags['gate-open']) { const d = this.npc('drone'); if (d) { d.x = 23; d.y = 10; d.px = d.x * 16; d.py = d.y * 16; d.dir = 'down'; } }
     if (st.flags['sprig-grove']) { const s = this.npc('sprig'); if (s) { s.x = 15; s.y = 5; s.px = 240; s.py = 80; } }
-    this.props = m.props.filter((p) => !(p.flag && st.flags[p.flag])).map((p) => ({ ...p, def: PROPS[p.t] }));
+    this.buildPropList();
     this.jewels = (m.jewels || []).filter((j) => !st.got[j.id]);
     this.parts = (m.parts || []).filter((p) => !st.parts[p.id]);
     this.buildBlockGrid();
@@ -87,8 +81,47 @@ export class World {
     this.gateGlow = 0;
     this.camShift = { x: 0, y: 0 };   // a script can nudge the camera to frame something
     this.game.beatHud = !!m.boombox;   // the console's speaker grille pumps along in the Jelly Jam
-    this.banner = { str: m.name.toUpperCase(), t: 0 };
+    this.banner = { str: this.mapName().toUpperCase(), t: 0 };
+    this.staff = null;
     this.updateMusic();
+  }
+  /* someone or something on the map is only there before a flag is set (flag), or after (need) */
+  present(o) { const f = this.st.flags; return !(o.flag && f[o.flag]) && !(o.need && !f[o.need]); }
+  makeNpc(n) {
+    const art = n.alt && this.st.flags[n.alt.flag] ? n.alt.art : n.art;
+    return { ...n, art, px: n.x * 16, py: n.y * 16, moving: false, parity: 0, prog: 0, wanderT: 120 + Math.random() * 200, home: { x: n.x, y: n.y } };
+  }
+  buildPropList() {
+    const f = this.st.flags;
+    this.props = this.map.props.filter((p) => this.present(p)).map((p) => ({ ...p, def: PROPS[p.alt && f[p.alt.flag] ? p.alt.t : p.t] }));
+    if (this.blockGrid) this.buildBlockGrid();
+  }
+  /* the ground, with any flag swaps applied (Cody's staff over the gap, the Deep's colour coming back) */
+  paintGround() {
+    const m = this.map, f = this.st.flags;
+    let rows = m.rows, key = m.id;
+    for (const s of m.swaps || []) {
+      if (!f[s.flag]) continue;
+      key += '+' + s.flag;
+      if (s.letters) rows = rows.map((r) => r.replace(/./g, (c) => s.letters[c] || c));
+      if (s.tiles) { const g = rows.map((r) => r.split('')); for (const [x, y, c] of s.tiles) g[y][x] = c; rows = g.map((r) => r.join('')); }
+    }
+    this.rows = rows;
+    this.mw = rows[0].length;
+    this.mh = rows.length;
+    this.frames = painted[key] || (painted[key] = paintMap(rows));
+  }
+  /* the map's healed state (the Deep, once the Black Dragon is beaten), if it has one and it's healed */
+  healed() { const h = this.map.healed; return h && this.st.flags[h.flag] ? h : null; }
+  mapName() { const h = this.healed(); return (h && h.name) || this.map.name; }
+  get encounters() { const h = this.healed(); return (h && h.encounters) || this.map.encounters || []; }
+  /* after a script sets a flag that changes the map: repaint, and add or remove whatever the flag affects */
+  refresh() {
+    this.paintGround();
+    this.buildPropList();
+    this.npcs = this.npcs.filter((n) => { const d = this.map.npcs.find((q) => q.id === n.id); return !d || this.present(d); });
+    for (const d of this.map.npcs) if (this.present(d) && !this.npc(d.id)) this.npcs.push(this.makeNpc(d));
+    this.buildBlockGrid();
   }
   buildBlockGrid() {
     this.blockGrid = new Uint8Array(this.mw * this.mh);
@@ -104,7 +137,8 @@ export class World {
     const p = this.player, z = (this.map.zones || []).find((q) => p.x >= q.x && p.x < q.x + q.w && p.y >= q.y && p.y < q.y + q.h);
     if (z) return z.music;
     if (this.st.riding && this.st.pet && !this.map.boombox) return 'ride';   // in the Jelly Jam, its own tunes win
-    return this.map.music;
+    const h = this.healed();
+    return (h && h.music) || this.map.music;
   }
   updateMusic() { playMusic(this.musicHere()); }
 
@@ -202,8 +236,21 @@ export class World {
     // the bump on your head from the crash still throbs sometimes, until Chapter 1 is over
     if (this.throbT === undefined) this.throbT = 3000 + Math.random() * 3000;
     if (idle && st.pet && !st.flags.chapter1 && --this.throbT <= 0) { this.throbT = 8000 + Math.random() * 6000; this.throb(g); }
+    // now and then you whistle or hum her little tune without thinking (and NOVA joins in)
+    if (this.humT === undefined) this.humT = 4200 + Math.random() * 2400;
+    if (idle && st.pet && hasMemory(st, 'name') && --this.humT <= 0) {
+      this.humT = 6600 + Math.random() * 4200;
+      if (hasMemory(st, 'tune')) SCRIPTS.hum(g, this);   // you can keep walking while you whistle
+      else this.run(SCRIPTS.hum);                         // the first time, it brings something back
+    }
     // your eyes glow green for a while after your warrior blood boils
     if (st.furyT > 0 && t % 12 === 0) this.particles.push({ x: p.px + 4 + rnd(0, 8), y: p.py + rnd(-2, 4), vx: rnd(-0.2, 0.2), vy: -rnd(0.3, 0.6), life: 24, age: 0, kind: 'spark', col: t % 24 ? '#3ad07e' : '#b8f0d0' });
+    // birds flitting across the sky (never in the grey Deep: they come back when it's healed)
+    if (t % 400 === 0 && ['bloomhaven', 'wilds', 'jungle', 'lagoon'].concat(this.healed() ? ['deep'] : []).includes(this.map.id) && Math.random() < 0.7) {
+      const cx = this.camX || 0, cy = this.camY || 0, left = Math.random() < 0.5, n = 1 + Math.floor(Math.random() * 3), y0 = cy + rnd(8, 60);
+      for (let i = 0; i < n; i++) this.particles.push({ x: left ? cx - 10 - i * 9 : cx + W + 10 + i * 9, y: y0 + i * 5 + rnd(-2, 2), vx: (left ? 1 : -1) * rnd(0.7, 0.9), vy: rnd(-0.08, 0.04), life: 260, age: 0, kind: 'bird', seed: i * 7 });
+      if (Math.random() < 0.5) sfx.chirp();
+    }
     // Enya is only an echo: diamond light glitters round her
     const en = this.followers.find((f) => f.kind === 'enya');
     if (en && t % 23 === 0) this.particles.push({ x: en.px + 4 + rnd(0, 8), y: en.py - 6 + rnd(0, 12), vx: 0, vy: -0.2, life: 26, age: 0, kind: 'spark', col: t % 46 ? '#ffffff' : '#c8f4ff' });
@@ -213,13 +260,16 @@ export class World {
     }
     if (t % 14 === 0) {
       const cx = this.camX || 0, cy = this.camY || 0;
-      const kind = { wilds: 'spore', jungle: t % 28 ? 'firefly' : 'jleaf', groove: 'gspore' }[this.map.id] || 'petal';
-      this.particles.push({ x: cx + rnd(0, W), y: cy + rnd(0, H), vx: rnd(-0.15, 0.15), vy: kind === 'jleaf' ? rnd(0.15, 0.3) : rnd(-0.2, -0.05), life: kind === 'firefly' ? 220 : 160, age: 0, kind, seed: Math.floor(rnd(0, 40)) });
+      const healedDeep = this.map.id === 'deep' && this.healed();
+      const kind = healedDeep ? (t % 28 ? 'firefly' : 'jleaf') : { wilds: 'spore', jungle: t % 28 ? 'firefly' : 'jleaf', groove: 'gspore', mire: 'mfly', lagoon: 'glint', deep: 'ash' }[this.map.id] || 'petal';
+      const falls = kind === 'jleaf' || kind === 'ash';
+      this.particles.push({ x: cx + rnd(0, W), y: cy + rnd(0, H), vx: rnd(-0.15, 0.15), vy: falls ? rnd(0.12, 0.28) : rnd(-0.2, -0.05), life: kind === 'firefly' || kind === 'mfly' ? 220 : 160, age: 0, kind, seed: Math.floor(rnd(0, 40)) });
     }
     for (const q of this.particles) {
       q.age++; q.x += q.vx; q.y += q.vy;
-      if (q.kind === 'firefly') { q.vx = Math.max(-0.3, Math.min(0.3, q.vx + rnd(-0.03, 0.03))); q.vy = Math.max(-0.3, Math.min(0.3, q.vy + rnd(-0.03, 0.03))); }
+      if (q.kind === 'firefly' || q.kind === 'mfly') { q.vx = Math.max(-0.3, Math.min(0.3, q.vx + rnd(-0.03, 0.03))); q.vy = Math.max(-0.3, Math.min(0.3, q.vy + rnd(-0.03, 0.03))); }
       else if (q.kind === 'leaf' || q.kind === 'shard') q.vy += 0.07;
+      else if (q.kind === 'puff') { q.vx *= 0.92; q.vy *= 0.92; }
     }
     this.particles = this.particles.filter((q) => q.age < q.life);
     this.emotes = this.emotes.filter((e) => ++e.t < e.life);
@@ -324,8 +374,15 @@ export class World {
       for (let i = 0; i < 4; i++) this.particles.push({ x: p.px + 4 + rnd(0, 8), y: p.py + 10, vx: rnd(-0.5, 0.5), vy: -rnd(0.4, 0.9), life: 16, age: 0, kind: leaf });
     }
     this.updateMusic();
+    // a ghoul grabs at Enya's echo, and NOVA's FIRE TIGER RING sees it off
+    st.sinceRescue = (st.sinceRescue || 0) + 1;
+    if (enyaWith(st) && st.pet.moves.includes('firering') && ['jungle', 'wilds', 'groove'].includes(this.map.id) && st.sinceRescue > (st.flags.rescued ? 260 : 60) && Math.random() < 1 / 45) {
+      st.sinceRescue = 0;
+      this.run(SCRIPTS.enyaRescue);
+      return;
+    }
     if (t.encounter && st.pet && p.sinceBattle > 3 && Math.random() < 0.11) {
-      const list = this.map.encounters || [];
+      const list = this.encounters;
       let r = Math.random() * list.reduce((n, e) => n + e.weight, 0);
       const e = list.find((q) => (r -= q.weight) < 0) || list[0];
       if (e) this.run(async (g, w) => { await w.battle({ species: e.species, lv: Math.floor(rnd(e.min, e.max + 1)) }); });
@@ -339,8 +396,9 @@ export class World {
     if (fol) { fol.dir = OPP[p.dir]; this.run(fol.kind === 'pet' ? SCRIPTS.petTalk : SCRIPTS.enyaTalk, fol); return; }
     const n = this.npcAt(fx, fy);
     if (n) {
-      if (!n.big && !n.hover) n.dir = OPP[p.dir];
+      if (!n.big && !n.hover && !n.sleep) n.dir = OPP[p.dir];
       if (n.art === 'bloom' || n.art === 'jelly') { n.hopT = n.hopMax = 12; n.hopH = 4; sfx.boing(); }
+      if (n.art === 'turtle' || n.art === 'crab') { n.hopT = n.hopMax = 10; n.hopH = 2; }
       if (SCRIPTS[n.talk]) this.run(SCRIPTS[n.talk], n);
       return;
     }
@@ -348,11 +406,18 @@ export class World {
     if (pr) {
       if (pr.talk && SCRIPTS[pr.talk]) { this.run(SCRIPTS[pr.talk], pr); return; }
       if (pr.text) { this.run(async (g) => { await g.say(pr.text); }); return; }
+      // flowers: some of the only things that quiet the noise in your head
+      const t = pr.def === PROPS.greyflower ? 'grey' : pr.def === PROPS.glowflower ? 'glow' : null;
+      if (t) { this.run(async (g) => { await g.say(t === 'grey' ? 'A grey, wilted flower. When you touch it, its petals fall like ash.' : "You breathe in the glowflower's scent: honey and rain. For a moment, your head is perfectly quiet."); }); return; }
     }
-    const t = TILE[this.tile(fx, fy)] || {};
-    if (t.water && !t.void) this.run(async (g) => { await g.say(this.tile(fx, fy) === 'a' ? 'Glowing algae sway in the water. A tiny jelly blinks at you.' : 'The river glows a soft, bright green.'); });
+    const t = TILE[this.tile(fx, fy)] || {}, grey = this.map.id === 'deep' && !this.healed();
+    if (t.ooze) this.run(async (g) => { await g.say('Thick yellow-green ooze, bubbling and glooping. It smells like old socks. You are NOT going in there.'); });
+    else if (t.lagoon) this.run(async (g) => { await g.say('The lagoon is as clear as glass. Little goldfish dart about over the white sand.'); });
+    else if (t.water && !t.void) this.run(async (g) => { await g.say(grey ? 'The stream is grey and still. Nothing moves in it at all.' : this.tile(fx, fy) === 'a' ? 'Glowing algae sway in the water. A tiny jelly blinks at you.' : 'The river glows a soft, bright green.'); });
     else if (t.void) this.run(async (g) => { await g.say(this.map.id === 'groove' ? 'Purple sky in every direction. Far below, giant jellies drift by like slow balloons.' : 'The land ends here. Below, the purple sky goes on forever...'); });
-    else if (t.name === 'canopy') this.run(async (g) => { await g.say('Giant trees, packed tight. Somewhere in the leaves, something whispers your name...'); });
+    else if (t.name === 'canopy') this.run(async (g) => { await g.say(grey ? 'Grey, dead trees. The leaves crumble to dust when you touch them.' : 'Giant trees, packed tight. Somewhere in the leaves, something whispers your name...'); });
+    else if (t.name === 'deadwood') this.run(async (g) => { await g.say('Dead swamp trees, dripping with moss. Two little yellow eyes blink at you from the dark... then vanish.'); });
+    else if (t.name === 'palacewall') this.run(async (g) => { await g.say(this.st.flags['king-beaten'] ? 'The palace wall: red lacquer and gold, warm in the sun.' : 'The palace wall: red lacquer and gold. Somewhere inside, someone is shouting about a cat.'); });
   }
 
   toggleRide() {
@@ -579,7 +644,7 @@ export class World {
     for (const pr of this.props) {
       const d = pr.def, img = d.img[d.anim ? Math.floor(g.t / d.anim) % d.img.length : (pr.open ? 1 : 0)] || d.img[0];
       let x, y;
-      if (d.deco) { x = pr.x * 16 + (pr.px || 0); y = pr.y * 16 + (pr.py || 0) + Math.round(Math.sin(g.t / 60) * 1); ctx.drawImage(img, x, y); continue; }
+      if (d.deco) { x = pr.x * 16 + (pr.px || 0); y = pr.y * 16 + (pr.py || 0) + (d.still ? 0 : Math.round(Math.sin(g.t / 60) * 1)); ctx.drawImage(img, x, y); continue; }
       x = pr.x * 16 + Math.floor((d.w * 16 - img.width) / 2);
       y = (pr.y + d.h) * 16 - img.height;
       if (!this.onScreen(x, y, img.width, img.height)) continue;
@@ -614,7 +679,9 @@ export class World {
     for (const fo of this.followers) items.push({ z: fo.py + 14, draw: () => this.drawFollower(ctx, fo, g.t) });
     items.push({ z: p.py + 15, draw: () => this.drawPlayer(ctx, g.t) });
     items.sort((a, b) => a.z - b.z);
+    if (this.staff && !this.staff.top) this.drawStaff(ctx, this.staff, g.t);   // lying across the ooze, under everyone
     for (const it of items) it.draw();
+    if (this.staff && this.staff.top) this.drawStaff(ctx, this.staff, g.t);
     // particles
     for (const q of this.particles) {
       if (q.age < 0) continue;
@@ -631,6 +698,28 @@ export class World {
         }
       }
       else if (q.kind === 'jleaf') { ctx.globalAlpha = Math.min(1, a * 1.5); ctx.fillStyle = (q.seed % 3) ? '#5fb070' : '#d8a040'; ctx.fillRect(Math.round(q.x + Math.sin(q.age / 10) * 3), Math.round(q.y), 2, 1); }
+      else if (q.kind === 'ash') { ctx.globalAlpha = Math.min(1, a * 1.5) * 0.7; ctx.fillStyle = (q.seed % 3) ? '#8a8698' : '#c0bccc'; ctx.fillRect(Math.round(q.x + Math.sin(q.age / 14) * 3), Math.round(q.y), 1, 1); }
+      else if (q.kind === 'mfly') {   // swamp flies, glowing yellow-green
+        if ((q.age + q.seed) % 36 < 24) { ctx.globalAlpha = Math.min(1, a * 2) * 0.35; ctx.fillStyle = '#c8e83a'; ctx.fillRect(Math.round(q.x) - 1, Math.round(q.y) - 1, 3, 3); ctx.globalAlpha = Math.min(1, a * 2); ctx.fillStyle = '#f6ffb0'; ctx.fillRect(Math.round(q.x), Math.round(q.y), 1, 1); }
+      }
+      else if (q.kind === 'glint') { if ((q.age + q.seed) % 30 < 8) { ctx.globalAlpha = Math.min(1, a * 2); ctx.fillStyle = '#ffffff'; const gx = Math.round(q.x), gy = Math.round(q.y); ctx.fillRect(gx, gy, 1, 1); if ((q.age + q.seed) % 30 < 4) { ctx.fillStyle = '#b8f8ff'; ctx.fillRect(gx - 1, gy, 3, 1); ctx.fillRect(gx, gy - 1, 1, 3); } } }
+      else if (q.kind === 'bird') {   // a little bird, wings flapping
+        const bx = Math.round(q.x), by = Math.round(q.y + Math.sin((q.age + q.seed) / 9) * 2), up = Math.floor((q.age + q.seed) / 6) % 2;
+        ctx.globalAlpha = 1; ctx.fillStyle = '#1a0f2e';
+        ctx.fillRect(bx, by, 1, 1); ctx.fillRect(bx - 1, by + (up ? -1 : 1), 1, 1); ctx.fillRect(bx + 1, by + (up ? -1 : 1), 1, 1); ctx.fillRect(bx - 2, by + (up ? -2 : 1), 1, 1); ctx.fillRect(bx + 2, by + (up ? -2 : 1), 1, 1);
+      }
+      else if (q.kind === 'puff') { ctx.globalAlpha = a * 0.9; ctx.fillStyle = q.col || '#ffffff'; const s = 1 + Math.floor((1 - a) * 3); ctx.fillRect(Math.round(q.x), Math.round(q.y), s, s); }
+      else if (q.kind === 'zz') { ctx.globalAlpha = Math.min(1, a * 2); text(ctx, 'z', Math.round(q.x + Math.sin(q.age / 12) * 2), Math.round(q.y), '#e6d8ff', { outline: '#1a0f2e' }); }
+      else if (q.kind === 'firering') {   // NOVA's FIRE TIGER RING: a ring of flame pulsing out, wider and wider
+        const k = q.age / q.life, r = 4 + k * q.r, cols = ['#fff6c8', '#ffd23a', '#ff8a1e', '#e8302a'];
+        ctx.globalAlpha = Math.min(1, (1 - k) * 2.5);
+        for (let i = 0; i < 48; i++) {
+          const an = (i / 48) * Math.PI * 2, fl = Math.sin(i * 2.3 + q.age * 0.9) * 1.5;
+          const fx = Math.round(q.x + Math.cos(an) * (r + fl)), fy = Math.round(q.y + Math.sin(an) * (r + fl) * 0.55);
+          ctx.fillStyle = cols[(i + (q.age >> 2)) % 4]; ctx.fillRect(fx, fy, 2, 2);
+          if (i % 3 === 0) { ctx.fillStyle = '#ff8a1e'; ctx.fillRect(fx, fy - 2 - ((i + q.age) % 3), 1, 2); }
+        }
+      }
       else if (q.kind === 'spark') { ctx.globalAlpha = a; ctx.fillStyle = q.col; ctx.fillRect(Math.round(q.x), Math.round(q.y), 1, 1); }
       else if (q.kind === 'shard') { ctx.globalAlpha = a; ctx.fillStyle = q.col; ctx.fillRect(Math.round(q.x), Math.round(q.y), q.age % 6 < 3 ? 2 : 1, q.age % 6 < 3 ? 1 : 2); }
       else if (q.kind === 'note') { ctx.globalAlpha = Math.min(1, a * 2); text(ctx, '♪', Math.round(q.x + Math.sin(q.age / 8) * 2), Math.round(q.y), q.col); }
@@ -713,6 +802,47 @@ export class World {
     }
   }
   onScreen(x, y, w, h) { return x + w > this.camX && x < this.camX + W && y + h > this.camY && y < this.camY + H; }
+
+  /* Cody's staff, from (x0, y0) to (x1, y1): dark wood, gold bands, a glowing star cap at the top end */
+  drawStaff(ctx, s, t) {
+    const dx = s.x1 - s.x0, dy = s.y1 - s.y0, len = Math.max(1, Math.round(Math.hypot(dx, dy))), thick = s.thick || 2;
+    for (let i = 0; i <= len; i++) {
+      const px = Math.round(s.x0 + (dx * i) / len), py = Math.round(s.y0 + (dy * i) / len), band = len > 10 && (i < 3 || i > len - 3 || i % 12 === 6);
+      ctx.fillStyle = '#1a0f2e'; ctx.fillRect(px - 1, py - 1, thick + 2, thick + 2);
+    }
+    for (let i = 0; i <= len; i++) {
+      const px = Math.round(s.x0 + (dx * i) / len), py = Math.round(s.y0 + (dy * i) / len), band = len > 10 && (i < 3 || i > len - 3 || i % 12 === 6);
+      ctx.fillStyle = band ? '#ffd23a' : '#9a6232'; ctx.fillRect(px, py, thick, thick);
+      if (!band) { ctx.fillStyle = '#c88a4a'; ctx.fillRect(px, py, 1, 1); }
+    }
+    if (s.cap) { const cx = Math.round(s.x1), cy = Math.round(s.y1); ctx.fillStyle = '#fff6a0'; ctx.fillRect(cx - 1, cy - 1, 3, 3); if (t % 20 < 10) { ctx.fillStyle = '#ffffff'; ctx.fillRect(cx, cy - 3, 1, 2); ctx.fillRect(cx - 3, cy, 2, 1); ctx.fillRect(cx + 2, cy, 2, 1); } }
+  }
+  /* animate Cody's staff from one shape to another over some frames (or to nothing, as it shrinks into his ear) */
+  async morphStaff(to, frames = 24) {
+    const from = this.staff || { ...to, x1: to.x0, y1: to.y0 };
+    for (let i = 1; i <= frames; i++) {
+      const k = i / frames, e = 1 - Math.pow(1 - k, 3);
+      this.staff = { ...to, x0: from.x0 + (to.x0 - from.x0) * e, y0: from.y0 + (to.y0 - from.y0) * e, x1: from.x1 + (to.x1 - from.x1) * e, y1: from.y1 + (to.y1 - from.y1) * e };
+      await this.game.wait(1);
+    }
+  }
+  /* a burst of white fur: Cody vanishing (or turning up) */
+  poof(x, y, n = 18) {
+    for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, s = rnd(0.5, 1.8); this.particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.3, life: 34, age: 0, kind: 'puff', col: i % 3 ? '#ffffff' : '#e6d8ff' }); }
+  }
+  /* NOVA's FIRE TIGER RING, out here in the world: rings of fire pulsing out from (x, y) */
+  async fireRing(x, y, reach = 46) {
+    sfx.fireRing();
+    for (let i = 0; i < 3; i++) {
+      this.particles.push({ x, y, vx: 0, vy: 0, life: 40, age: 0, kind: 'firering', r: reach });
+      for (let k = 0; k < 12; k++) this.particles.push({ x: x + rnd(-6, 6), y: y + rnd(-2, 4), vx: rnd(-0.3, 0.3), vy: -rnd(0.5, 1.1), life: 26, age: 0, kind: 'flame' });
+      await this.game.wait(12);
+    }
+  }
+  /* little notes floating up over someone humming (orange for NOVA, joining in) */
+  notes(e, n = 3, cols = NOTE_COLS) {
+    for (let i = 0; i < n; i++) this.particles.push({ x: e.px + 8 + rnd(-6, 6), y: e.py - 8, vx: rnd(-0.3, 0.3), vy: -rnd(0.3, 0.6), life: 60, age: -i * 10, kind: 'note', col: cols[i % cols.length] });
+  }
 
   /* the Jelly Jam's sky jellies and its dance floor, lit up on the beat (under everything else) */
   drawGroove(ctx) {
@@ -860,9 +990,35 @@ export class World {
     const x = Math.round(n.px), y = Math.round(n.py) - 4 + this.hopY(n);
     if (n.big) {
       const b = BATTLERS[n.art === 'thornback' ? 'thornAlpha' : n.art];
-      const img = spr(b.rows, b.pal), bob = Math.round(Math.sin(t / 20));
-      ctx.fillStyle = 'rgba(20,8,30,0.3)'; ctx.fillRect(n.px + 2, n.py + 12, 28, 4);
-      ctx.drawImage(img, n.px + 16 - Math.floor(img.width / 2), n.py + 16 - img.height + bob);
+      const img = spr(b.rows, b.pal, !!n.flip), bob = Math.round(Math.sin(t / 20)), lift = Math.round(n.dy || 0);
+      if (lift > -60) { ctx.fillStyle = 'rgba(20,8,30,0.3)'; ctx.fillRect(n.px + 2, n.py + 12, 28, 4); }
+      if (n.ghost) ctx.globalAlpha = 0.75 + 0.2 * Math.sin(t / 7);
+      if (n.alpha !== undefined) ctx.globalAlpha = n.alpha;
+      ctx.drawImage(img, n.px + 16 - Math.floor(img.width / 2) + Math.round(n.dx || 0), n.py + 16 - img.height + bob + lift);
+      ctx.globalAlpha = 1;
+      return;
+    }
+    if (n.art === 'cody') {   // the white cat: snoozing standing up, or riding his staff through the air
+      const shades = this.st.flags['cody-shades'], bare = n.bare || n.riding;
+      const set = bare ? (shades ? CH.CODY_BARE_SHADES : CH.CODY_BARE) : (shades ? CH.CODY_SHADES : CH.CODY);
+      const img = spr(set[k][n.moving ? fr : 0], CH.CODY_PAL, flip);
+      const lift = Math.round(n.dy || 0), ox = Math.round(n.dx || 0);
+      if (n.alpha !== undefined) ctx.globalAlpha = n.alpha;
+      if (lift > -40) { ctx.fillStyle = 'rgba(20,8,30,0.25)'; ctx.fillRect(x + 4 + ox, y + 16, 9, 2); }
+      if (n.riding) this.drawStaff(ctx, { x0: x + ox - 4, y0: y + 15 + lift, x1: x + ox + 20, y1: y + 15 + lift }, t);
+      ctx.drawImage(img, x + ox, y + lift + (n.sleep && Math.floor(t / 40) % 2 ? 1 : 0));
+      ctx.globalAlpha = 1;
+      if (n.sleep && t % 70 === 0) this.particles.push({ x: n.px + 10, y: n.py - 8, vx: 0.15, vy: -0.25, life: 70, age: 0, kind: 'zz' });
+      return;
+    }
+    if (n.art === 'turtle') {
+      ctx.fillStyle = 'rgba(20,8,30,0.22)'; ctx.fillRect(x + 3, y + 15, 10, 2);
+      ctx.drawImage(spr(CH.TURTLE[k][fr], CH.TURTLE_PALS[n.pal] || CH.TURTLE_PALS.green, flip), x, y + 1);
+      return;
+    }
+    if (n.art === 'crab') {   // the Dragon King's crab guards, snapping their claws
+      ctx.fillStyle = 'rgba(20,8,30,0.22)'; ctx.fillRect(x + 3, y + 15, 10, 2);
+      ctx.drawImage(spr(CH.CRAB[Math.floor((t + n.x * 13) / 24) % 2], CH.CRAB_PALS[n.pal] || CH.CRAB_PALS.red), x, y);
       return;
     }
     if (n.art === 'drone') {
